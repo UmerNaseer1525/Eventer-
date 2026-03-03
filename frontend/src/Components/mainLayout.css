@@ -1,0 +1,22 @@
+.main-layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 250px;
+  padding: 20px;
+  background-color: #f5f7fa;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    padding: 15px;
+  }
+}

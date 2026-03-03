@@ -1,9 +1,11 @@
 import { LockOutlined, UserOutlined, MailOutlined } from "@ant-design/icons";
 import { Button, Card, Form, Input, notification } from "antd";
+import { useNavigate } from "react-router-dom";
 import style from "./login.module.css";
 
 function Login() {
   const [api, contextHolder] = notification.useNotification();
+  const navigate = useNavigate();
 
   const onFinish = (values) => {
     // Simulate login logic
@@ -14,6 +16,11 @@ function Login() {
       duration: 3,
     });
     console.log("Login values:", values);
+
+    // Navigate to dashboard after successful login
+    setTimeout(() => {
+      navigate("/dashboard");
+    }, 1000);
   };
 
   const onFinishFail = (errorInfo) => {
@@ -28,66 +35,71 @@ function Login() {
 
   return (
     <div className={style.container}>
-      {contextHolder}
-      <h2>Welcome to EventX</h2>
-      <Form
-        onFinish={onFinish}
-        onFinishFailed={onFinishFail}
-        layout="vertical"
-        className={style.loginForm}
-      >
-        <Form.Item
-          name="email"
-          label="Email"
-          rules={[
-            { required: true, message: "Please enter your email" },
-            { type: "email", message: "Please enter a valid email" },
-          ]}
-        >
-          <Input
-            prefix={<MailOutlined />}
-            placeholder="Enter your email"
-            size="large"
-          />
-        </Form.Item>
-        <Form.Item
-          name="password"
-          label="Password"
-          rules={[
-            { required: true, message: "Please enter your password" },
-            // {
-            //   min: 8,
-            //   message: "Password must be at least 8 characters",
-            // },
-            // {
-            //   pattern:
-            //     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-            //   message:
-            //     "Password must contain a letter, a number, and a special character (@$!%*?&)",
-            // },
-          ]}
-        >
-          <Input.Password
-            prefix={<LockOutlined />}
-            size="large"
-            placeholder="Enter your password"
-          />
-        </Form.Item>
+      <div className={style.loginCard}>
+        {contextHolder}
 
-        <Form.Item>
-          <Button type="primary" htmlType="submit" size="large" block>
-            Login
-          </Button>
-        </Form.Item>
-      </Form>
+        <div className={style.logoSection}>
+          <img src="/Logo.png" alt="EventX Logo" className={style.logo} />
+          <h1 className={style.title}>EventX</h1>
+          <p className={style.subtitle}>Sign in to manage your events</p>
+        </div>
 
-      <div className={style.divider}>
-        <span>OR</span>
+        <Form
+          onFinish={onFinish}
+          onFinishFailed={onFinishFail}
+          layout="vertical"
+          className={style.loginForm}
+        >
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { required: true, message: "Please enter your email" },
+              { type: "email", message: "Please enter a valid email" },
+            ]}
+          >
+            <Input
+              prefix={<MailOutlined className={style.inputIcon} />}
+              placeholder="Enter your email"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="password"
+            label="Password"
+            rules={[{ required: true, message: "Please enter your password" }]}
+          >
+            <Input.Password
+              prefix={<LockOutlined className={style.inputIcon} />}
+              size="large"
+              placeholder="Enter your password"
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Button
+              type="primary"
+              htmlType="submit"
+              size="large"
+              block
+              className={style.loginButton}
+            >
+              Sign In
+            </Button>
+          </Form.Item>
+        </Form>
+
+        <div className={style.divider}>
+          <span>OR</span>
+        </div>
+
+        <p className={style.signupText}>
+          Don't have an account? <a href="/signup">Sign Up</a>
+        </p>
       </div>
 
-      <p className={style.signupText}>
-        Don't have an account? <a href="#">Sign Up</a>
-      </p>
+      <div className={style.backgroundDecoration}></div>
     </div>
   );
 }

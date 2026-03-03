@@ -1,0 +1,90 @@
+.dashboardContainer {
+  width: 100%;
+  padding: 10px;
+}
+
+.header {
+  margin-bottom: 30px;
+}
+
+.header h1 {
+  color: #2c3e50;
+  font-size: 32px;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+}
+
+.header p {
+  color: #6c757d;
+  font-size: 16px;
+  margin: 0;
+}
+
+.statsRow {
+  margin-bottom: 24px;
+}
+
+.statCard {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e8e8e8;
+  transition: all 0.3s ease;
+}
+
+.statCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+}
+
+.iconPrimary {
+  color: #1682b4;
+  font-size: 24px;
+}
+
+.iconSuccess {
+  color: #28a745;
+  font-size: 24px;
+}
+
+.iconWarning {
+  color: #ffc107;
+  font-size: 24px;
+}
+
+.iconDanger {
+  color: #dc3545;
+  font-size: 24px;
+}
+
+.contentRow {
+  margin-bottom: 24px;
+}
+
+.contentCard {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e8e8e8;
+  min-height: 400px;
+}
+
+.eventList,
+.quickActions {
+  padding: 20px;
+  text-align: center;
+  color: #6c757d;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 24px;
+  }
+
+  .header p {
+    font-size: 14px;
+  }
+
+  .dashboardContainer {
+    padding: 5px;
+  }
+}
