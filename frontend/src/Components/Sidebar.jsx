@@ -13,6 +13,7 @@ import {
 import { Button } from "antd";
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { logout } from "../Services/userAuth";
 import style from "./sidebar.module.css";
 
 function Sidebar() {
@@ -36,8 +37,8 @@ function Sidebar() {
   ];
 
   const handleLogout = () => {
-    // Add your logout logic here
-    navigate("/signin");
+    logout(); // Clear token and user data from localStorage
+    navigate("/signin", { replace: true });
   };
 
   return (

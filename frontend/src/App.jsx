@@ -11,6 +11,7 @@ import Bookings from "./Pages/Bookings/Bookings";
 import Payments from "./Pages/Payments/Payments";
 import Reports from "./Pages/Reports/Reports";
 import Notifications from "./Pages/Notifications/Notifications";
+import ProtectRoute from "./Components/ProtectRoute";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 function App() {
@@ -22,86 +23,88 @@ function App() {
         <Route path="/signin" element={<Login />} />
 
         {/* Protected routes with sidebar - all pages automatically get sidebar on left */}
-        <Route
-          path="/"
-          element={
-            <MainLayout>
-              <Dashboard />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <MainLayout>
-              <Dashboard />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/events"
-          element={
-            <MainLayout>
-              <Events />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/users"
-          element={
-            <MainLayout>
-              <Users />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/categories"
-          element={
-            <MainLayout>
-              <Categories />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/bookings"
-          element={
-            <MainLayout>
-              <Bookings />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/payments"
-          element={
-            <MainLayout>
-              <Payments />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/reports"
-          element={
-            <MainLayout>
-              <Reports />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <MainLayout>
-              <Settings />
-            </MainLayout>
-          }
-        />
-        <Route
-          path="/notifications"
-          element={
-            <MainLayout>
-              <Notifications />
-            </MainLayout>
-          }
-        />
+        <Route element={<ProtectRoute />}>
+          <Route
+            path="/"
+            element={
+              <MainLayout>
+                <Dashboard />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <MainLayout>
+                <Dashboard />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/events"
+            element={
+              <MainLayout>
+                <Events />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <MainLayout>
+                <Users />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/categories"
+            element={
+              <MainLayout>
+                <Categories />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/bookings"
+            element={
+              <MainLayout>
+                <Bookings />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/payments"
+            element={
+              <MainLayout>
+                <Payments />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <MainLayout>
+                <Reports />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <MainLayout>
+                <Settings />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <MainLayout>
+                <Notifications />
+              </MainLayout>
+            }
+          />
+        </Route>
 
         {/* Add more routes here - they will automatically get the sidebar layout */}
       </Routes>

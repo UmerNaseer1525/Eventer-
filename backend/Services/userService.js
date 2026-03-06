@@ -4,12 +4,12 @@ const getAllUsers = async () => {
   return await User.find({});
 };
 
-const getUserById = async (userId) => {
-  return await User.findById(userId);
+const getUserByEmail = async (userEmail) => {
+  return await User.findOne({ email: userEmail });
 };
 
-const deleteUser = async (userId) => {
-  return await User.deleteOne({ _id: userId });
+const deleteUser = async (userEmail) => {
+  return await User.deleteOne({ email: userEmail });
 };
 
 const createUser = async (userData) => {
@@ -17,38 +17,47 @@ const createUser = async (userData) => {
   return await user.save();
 };
 
-const updatePassword = async (userId, newPassword) => {
+const updatePassword = async (userEmail, newPassword) => {
   return await User.updateOne(
-    { _id: userId },
+    { email: userEmail },
     { $set: { password: newPassword } },
   );
 };
 
-const updateProfileImage = async (userId, profileImage) => {
+const updateProfileImage = async (userEmail, profileImage) => {
   return await User.updateOne(
-    { _id: userId },
+    { email: userEmail },
     { $set: { profileImage: profileImage } },
   );
 };
 
-const updatePhone = async (userId, phone) => {
-  return await User.updateOne({ _id: userId }, { $set: { phone: phone } });
+const updatePhone = async (userEmail, phone) => {
+  return await User.updateOne({ email: userEmail }, { $set: { phone: phone } });
 };
 
-const updateStatus = async (userId, newStatus) => {
-  return await User.updateOne({ _id: userId }, { $set: { status: newStatus } });
+const updateStatus = async (userEmail, newStatus) => {
+  return await User.updateOne(
+    { email: userEmail },
+    { $set: { status: newStatus } },
+  );
 };
 
-const updateName = async (userId, firstName, lastName) => {
+const updateName = async (userEmail, firstName, lastName) => {
   const updateFields = {};
   if (firstName) updateFields.firstName = firstName;
   if (lastName) updateFields.lastName = lastName;
-  return await User.updateOne({ _id: userId }, { $set: updateFields });
+  return await User.updateOne({ email: userEmail }, { $set: updateFields });
+};
+
+const updateUsername = async (userEmail, newUserName) => {
+  return await User.updateOne(
+    { email: userEmail },
+    { $set: { username: newUserName } },
+  );
 };
 
 module.exports = {
   getAllUsers,
-  getUserById,
   createUser,
   deleteUser,
   updatePassword,
@@ -56,4 +65,6 @@ module.exports = {
   updatePhone,
   updateStatus,
   updateName,
+  updateUsername,
+  getUserByEmail,
 };

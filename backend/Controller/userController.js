@@ -1,4 +1,6 @@
 const userServices = require("../Services/userService");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const getUsers = async (req, res) => {
   try {
@@ -9,27 +11,86 @@ const getUsers = async (req, res) => {
   }
 };
 
-const getUserById = async (req, res) => {
+const getUserByEmail = async (req, res) => {
   try {
     const { email } = req.params;
-    const user = await userServices.getUserById(email);
+    const user = await userServices.getUserByEmail(email);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json(user);
+    // Don't send password in response
+    const { password, ...userWithoutPassword } = user.toObject();
+    res.status(200).json(userWithoutPassword);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await userServices.getUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "1h" },
+    );
+
+    res.status(200).json({
+      message: "Login Successfully",
+      token: token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
 const createUser = async (req, res) => {
+  const { email, password } = req.body;
   try {
-    const user = await userServices.createUser(req.body);
+    console.log("Creating user with email:", email);
+    const result = await userServices.getUserByEmail(email);
+    if (result) {
+      console.log("User already exists with email:", email);
+      return res
+        .status(409)
+        .json({ message: "User already Exist with this email" });
+    }
+
+    // Hash password before saving
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const userData = {
+      ...req.body,
+      password: hashedPassword,
+    };
+
+    const user = await userServices.createUser(userData);
+    console.log("User created successfully:", user._id);
     res.status(201).json({
       message: "User created successfully",
       userId: user._id,
     });
   } catch (error) {
+    console.error("Error creating user:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -139,9 +200,26 @@ const updateName = async (req, res) => {
   }
 };
 
+const updateUsername = async (req, res) => {
+  const { id } = req.params;
+  const { username } = req.body;
+  if (!username) {
+    return res.status(400).json({ message: "username is required" });
+  }
+
+  try {
+    const result = await userServices.updateUsername(username);
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ message: "Username updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getUsers,
-  getUserById,
   createUser,
   deleteUser,
   updatePassword,
@@ -149,4 +227,7 @@ module.exports = {
   updatePhone,
   updateStatus,
   updateName,
+  updateUsername,
+  getUserByEmail,
+  loginUser,
 };

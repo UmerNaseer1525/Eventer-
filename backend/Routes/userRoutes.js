@@ -1,15 +1,33 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../Controller/userController");
+const { authenticateToken } = require("../Middleware/authMiddleware");
 
-router.get("/", userController.getUsers);
-router.get("/:id", userController.getUserById);
-router.post("/", userController.createUser);
-router.delete("/:id", userController.deleteUser);
-router.put("/:id/password", userController.updatePassword);
-router.put("/:id/profile-image", userController.updateProfileImage);
-router.put("/:id/status", userController.updateStatus);
-router.put("/:id/phone", userController.updatePhone);
-router.put("/:id/name", userController.updateName);
+// Public routes
+router.post("/", userController.createUser); // Register
+router.post("/login", userController.loginUser); // Login
+
+// Protected routes - require authentication
+router.get("/", authenticateToken, userController.getUsers);
+router.get("/:email", authenticateToken, userController.getUserByEmail);
+router.delete("/:email", authenticateToken, userController.deleteUser);
+router.put(
+  "/:email/password",
+  authenticateToken,
+  userController.updatePassword,
+);
+router.put(
+  "/:email/profile-image",
+  authenticateToken,
+  userController.updateProfileImage,
+);
+router.put("/:email/status", authenticateToken, userController.updateStatus);
+router.put("/:email/phone", authenticateToken, userController.updatePhone);
+router.put("/:email/name", authenticateToken, userController.updateName);
+router.put(
+  "/:email/user-name",
+  authenticateToken,
+  userController.updateUsername,
+);
 
 module.exports = router;

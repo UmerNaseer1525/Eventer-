@@ -160,7 +160,13 @@ GET /api/users
 
 ---
 
-#### Get User by ID
+#### Get User by email
+
+```
+GET /api/users/:email
+```
+
+#### Get User by email
 
 ```
 GET /api/users/:id
