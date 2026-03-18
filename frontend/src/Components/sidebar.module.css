@@ -15,21 +15,25 @@
 }
 
 .sidebar_header {
-  padding: 20px;
-  text-align: center;
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.1);
+  justify-content: flex-start;
 }
 
 .sidebar_logo {
-  width: 80px;
-  height: 80px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: contain;
   background: white;
-  padding: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  padding: 5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   transition: transform 0.3s ease;
+  flex-shrink: 0;
 }
 
 .sidebar_logo:hover {
@@ -38,58 +42,48 @@
 
 .sidebar_title {
   color: white;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: bold;
-  margin-top: 15px;
-  margin-bottom: 5px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  margin: 0;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
 }
 
 .sidebar_menu {
   flex: 1;
-  padding: 20px 10px;
+  padding: 10px 0;
   overflow-y: auto;
 }
 
-.menu_button {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  margin-bottom: 10px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  color: white;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: left;
-  height: 40px;
-  justify-content: flex-start;
+.antd_menu {
+  background: transparent !important;
+  border-right: none !important;
+  color: white !important;
+  font-size: 15px !important;
 }
 
-.menu_button:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.4);
+.antd_menu :global(.ant-menu-item) {
+  margin: 4px 10px !important;
+  border-radius: 8px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  width: calc(100% - 20px) !important;
+  transition: all 0.3s ease !important;
+}
+
+.antd_menu :global(.ant-menu-item:hover) {
+  background: rgba(255, 255, 255, 0.2) !important;
   transform: translateX(5px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.menu_button:active {
-  transform: translateX(3px);
+.antd_menu :global(.ant-menu-item-selected) {
+  background: rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.menu_button_active {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.menu_button span {
-  font-size: 18px;
+.antd_menu :global(.ant-menu-item .anticon) {
+  font-size: 18px !important;
 }
 
 .sidebar_footer {
@@ -150,17 +144,29 @@
   }
 
   .sidebar_title,
-  .menu_button span:last-child {
+  .menu_button,
+  .antd_menu :global(.ant-menu-title-content) {
     display: none;
   }
 
-  .menu_button {
-    justify-content: center;
-    padding: 12px;
+  .antd_menu :global(.ant-menu-item) {
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 4px auto !important;
+    width: 40px !important;
+  }
+
+  .antd_menu :global(.ant-menu-item .anticon) {
+    margin: 0 !important;
   }
 
   .sidebar_logo {
-    width: 50px;
-    height: 50px;
+    width: 35px;
+    height: 35px;
+  }
+
+  .sidebar_header {
+    justify-content: center;
+    padding: 15px 0;
   }
 }

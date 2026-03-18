@@ -1,0 +1,94 @@
+.settingsPage {
+  width: 100%;
+}
+
+.title {
+  margin: 0 0 20px;
+  color: #2c3e50;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.settingCard {
+  border-radius: 12px;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.layout {
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.formSection {
+  flex: 2;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.form {
+  width: 100%;
+  max-width: 560px;
+}
+
+.profileSection {
+  flex: 1;
+  min-width: 240px;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.profileTitle {
+  margin: 0 0 12px;
+  color: #2c3e50;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.profileImage {
+  width: 100%;
+  max-width: 340px;
+  height: 280px;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 1px solid #e0e0e0;
+}
+
+.profileImage :global(.ant-image-img) {
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+.uploadNote {
+  margin: 2px 0 0;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+@media (max-width: 992px) {
+  .layout {
+    flex-direction: column-reverse;
+  }
+
+  .profileSection {
+    min-width: 100%;
+  }
+
+  .profileImage,
+  .profileImage :global(.ant-image-img) {
+    height: 240px;
+  }
+}
