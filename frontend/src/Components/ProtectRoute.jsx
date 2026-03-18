@@ -1,27 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
+// Auth checking is handled by the authLoader in App.jsx.
+// If the loader passes, the user is authenticated — just render children.
 function ProtectRoute() {
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => !!localStorage.getItem("token"),
-  );
-  const location = useLocation();
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem("token");
-      setIsAuthenticated(!!token);
-    };
-
-    checkAuth();
-    window.addEventListener("auth-change", checkAuth);
-
-    return () => {
-      window.removeEventListener("auth-change", checkAuth);
-    };
-  }, [location]);
-
-  return isAuthenticated ? <Outlet /> : <Navigate to="/signin" replace />;
+  return <Outlet />;
 }
 
 export default ProtectRoute;

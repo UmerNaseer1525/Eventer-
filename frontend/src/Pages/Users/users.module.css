@@ -1,0 +1,13 @@
+.action_btns {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.action_btns button {
+  font-size: 13px;
+  height: 30px;
+  width: 20px;
+}
