@@ -23,7 +23,6 @@ function Signup() {
       role: "organizer",
       profileImage: "profile.png",
     };
-    console.log(update_value);
 
     setIsLoading(true);
 
@@ -91,17 +90,10 @@ function Signup() {
               label={"First Name"}
               rules={[
                 { required: true, message: "Enter First Name" },
-                {
-                  pattern: /^[a-zA-z]+$/,
-                  message: "Only Characters are allowed",
-                },
+                { pattern: /^[a-zA-z]+$/, message: "Only Characters are allowed" },
               ]}
             >
-              <Input
-                size="large"
-                placeholder="First Name"
-                prefix={<EditOutlined className={style.inputIcon} />}
-              />
+              <Input size="large" placeholder="First Name" prefix={<EditOutlined className={style.inputIcon} />} />
             </Form.Item>
 
             <Form.Item
@@ -109,28 +101,18 @@ function Signup() {
               label={"Last Name"}
               rules={[
                 { required: true, message: "Enter Last Name" },
-                {
-                  pattern: /^[a-zA-z]+$/,
-                  message: "Only Characters are allowed",
-                },
+                { pattern: /^[a-zA-z]+$/, message: "Only Characters are allowed" },
               ]}
             >
-              <Input
-                size="large"
-                placeholder="Last Name"
-                prefix={<EditOutlined className={style.inputIcon} />}
-              />
+              <Input size="large" placeholder="Last Name" prefix={<EditOutlined className={style.inputIcon} />} />
             </Form.Item>
+
             <Form.Item
               name={"username"}
               label={"Username"}
               rules={[{ required: true, message: "Please Enter Username" }]}
             >
-              <Input
-                size="large"
-                placeholder="Username"
-                prefix={<UserOutlined className={style.inputIcon} />}
-              />
+              <Input size="large" placeholder="Username" prefix={<UserOutlined className={style.inputIcon} />} />
             </Form.Item>
 
             <Form.Item
@@ -138,17 +120,10 @@ function Signup() {
               label={"Email"}
               rules={[
                 { required: true, message: "Please Enter Email" },
-                {
-                  type: "email",
-                  message: "Entered value is not a valid email",
-                },
+                { type: "email", message: "Entered value is not a valid email" },
               ]}
             >
-              <Input
-                size="large"
-                placeholder="Email"
-                prefix={<MailOutlined className={style.inputIcon} />}
-              />
+              <Input size="large" placeholder="Email" prefix={<MailOutlined className={style.inputIcon} />} />
             </Form.Item>
 
             <Form.Item
@@ -158,49 +133,27 @@ function Signup() {
                 { required: true, message: "Please Enter Password" },
                 { min: 8, message: "Password must be 8 characters or longer" },
                 {
-                  pattern:
-                    /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-                  message:
-                    "Password must contain letters, numbers, and special characters (@$!%*?&)",
+                  pattern: /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+                  message: "Password must contain letters, numbers, and special characters (@$!%*?&)",
                 },
               ]}
             >
-              <Input.Password
-                size="large"
-                placeholder="Password"
-                prefix={<LockOutlined className={style.inputIcon} />}
-              />
+              <Input.Password size="large" placeholder="Password" prefix={<LockOutlined className={style.inputIcon} />} />
             </Form.Item>
 
             <Form.Item
               name={"phone"}
               label={"Phone Number"}
               rules={[
-                {
-                  required: true,
-                  message: "Enter Phone Number",
-                },
-                {
-                  pattern: /^\+?[0-9]+$/,
-                  message: "Only numbers are allowed (0-9) without space",
-                },
+                { required: true, message: "Enter Phone Number" },
+                { pattern: /^\+?[0-9]+$/, message: "Only numbers are allowed (0-9) without space" },
               ]}
             >
-              <Input
-                size="large"
-                placeholder="Phone Number"
-                prefix={<PhoneOutlined className={style.inputIcon} />}
-              />
+              <Input size="large" placeholder="Phone Number" prefix={<PhoneOutlined className={style.inputIcon} />} />
             </Form.Item>
 
             <Form.Item>
-              <Button
-                size="large"
-                type="primary"
-                htmlType="submit"
-                block
-                className={style.signupButton}
-              >
+              <Button size="large" type="primary" htmlType="submit" block className={style.signupButton}>
                 Sign Up
               </Button>
             </Form.Item>
@@ -211,7 +164,7 @@ function Signup() {
           </div>
 
           <p className={style.signinText}>
-            Already have an account? <a href="/">Sign In</a>
+            Already have an account? <a href="/login">Sign In</a>
           </p>
         </div>
 
