@@ -44,7 +44,6 @@ async function validateUser(data) {
 
     const result = await response.json();
 
-    // Store token in localStorage
     if (result.token) {
       localStorage.setItem("token", result.token);
       localStorage.setItem("user", JSON.stringify(result.user));
@@ -58,7 +57,6 @@ async function validateUser(data) {
   }
 }
 
-// Function to get authorization headers
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
   return {
@@ -67,7 +65,6 @@ function getAuthHeaders() {
   };
 }
 
-// Function to logout
 function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");

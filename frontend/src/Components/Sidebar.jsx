@@ -26,7 +26,8 @@ function Sidebar() {
       icon: <DashboardOutlined />,
       label: "Admin Dashboard",
     },
-    { key: "/events", icon: <ScheduleOutlined />, label: "Manage Events" },
+    { key: "/events", icon: <ScheduleOutlined />, label: "Events" },
+
     { key: "/my-events", icon: <ScheduleOutlined />, label: "My Events" },
     { key: "/analytics", icon: <BarChartOutlined />, label: "Analytics" },
     { key: "/users", icon: <UserOutlined />, label: "Users" },

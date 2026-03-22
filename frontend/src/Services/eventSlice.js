@@ -84,8 +84,22 @@ const eventSlice = createSlice({
         event.id === action.payload.id ? action.payload : event,
       );
     },
+
+    updateStatus: (state, action) => {
+      return state.map((event) => {
+        if (event.id === action.payload.id) {
+          return {
+            ...event,
+            status: action.payload.status,
+          };
+        } else {
+          return event;
+        }
+      });
+    },
   },
 });
 
-export const { addEvent, deleteEvent, updateEvent } = eventSlice.actions;
+export const { addEvent, deleteEvent, updateEvent, updateStatus } =
+  eventSlice.actions;
 export default eventSlice.reducer;

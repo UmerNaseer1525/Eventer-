@@ -1,10 +1,4 @@
 import {
-  EditOutlined,
-  FileAddOutlined,
-  AppstoreAddOutlined,
-  ClockCircleOutlined,
-} from "@ant-design/icons";
-import {
   Card,
   Button,
   Row,
@@ -12,27 +6,21 @@ import {
   Tag,
   Input,
   Radio,
-  FloatButton,
-  Tooltip,
   Empty,
   Alert,
   notification,
+  Divider,
 } from "antd";
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { addBooking } from "../../Services/bookingSlice";
-import CreateEvent from "../../Components/CreateEvent";
-import EditEvent from "../../Components/EditEvent";
 
 function Events() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const events = useSelector((state) => state.event);
-  console.log(events)
+  console.log(events);
   const dispatch = useDispatch();
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [selectedEvent, setSelectedEvent] = useState(null)
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -54,45 +42,62 @@ function Events() {
       return;
     }
     setError(null);
-    setIsLoading(true)
+    setIsLoading(true);
     setTimeout(() => {
       dispatch(addBooking(event_Detail));
-      setIsLoading(false)
+      setIsLoading(false);
       notification.success({
         message: "Booking Successful",
         description: `Successfully booked ${event_Detail.name}`,
-      })
-    }, 1000)
+      });
+    }, 1000);
   }
 
-  const filteredEvents = Array.isArray(events)
-    ? events
-        .filter(
-          (event) =>
-            event &&
-            typeof event.name === "string" &&
-            typeof event.status === "string" &&
-            typeof event.location === "string" &&
-            typeof event.contact === "string" &&
-            typeof event.category === "string" &&
-            event.cover,
-        ).filter(event => event.status.toLowerCase() !== 'completed')
-        .filter((event) => {
-          const matchesName = event.name
-            .toLowerCase()
-            .includes(search.toLowerCase());
-          const matchesStatus =
-            status === "all" ? true : event.status.toLowerCase() === status;
-          return matchesName && matchesStatus;
-        })
+  const validEvents = Array.isArray(events)
+    ? events.filter(
+        (event) =>
+          event &&
+          typeof event.name === "string" &&
+          typeof event.status === "string" &&
+          typeof event.location === "string" &&
+          typeof event.contact === "string" &&
+          typeof event.category === "string" &&
+          event.cover,
+      )
     : [];
+
+  const filteredEvents = validEvents
+    .filter((event) => event.status.toLowerCase() !== "completed")
+    .filter((event) => {
+      const matchesName = event.name
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      const matchesStatus =
+        status === "all" ? true : event.status.toLowerCase() === status;
+      return (
+        matchesName &&
+        matchesStatus &&
+        event.status.toLowerCase() !== "cancelled"
+      );
+    });
+
+  const cancelledEvents = validEvents
+    .filter((event) => event.status.toLowerCase() === "cancelled")
+    .filter((event) => {
+      const matchesName = event.name
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      const matchesStatus =
+        status === "all" ? true : event.status.toLowerCase() === status;
+      return matchesName && matchesStatus;
+    });
 
   return (
     <div style={{ padding: "10px" }}>
       <h1 style={{ marginBottom: "20px" }}>Manage Events</h1>
       {error && (
         <Alert
-          message="Error"
+          title="Error"
           description={
             <div>
               {error.message}
@@ -123,11 +128,11 @@ function Events() {
             value={status}
             onChange={onStatusFilter}
             size="large"
-            style={{ 
-              display: "flex", 
-              flexWrap: "wrap", 
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
               gap: "8px",
-              width: "100%"
+              width: "100%",
             }}
           >
             <Radio.Button value={"all"}>All</Radio.Button>
@@ -138,6 +143,108 @@ function Events() {
           </Radio.Group>
         </Col>
       </Row>
+      {/* Cancelled Events Alert */}
+      {cancelledEvents.length > 0 && (
+        <>
+          <Alert
+            message={<span>Below are cancelled events</span>}
+            type="error"
+            showIcon
+            style={{ marginBottom: 24 }}
+          />
+          <div style={{ marginBottom: 32 }}>
+            <Row gutter={[24, 24]}>
+              {cancelledEvents.map((event) => (
+                <Col
+                  key={event.id}
+                  xs={24}
+                  sm={12}
+                  md={12}
+                  lg={12}
+                  xl={8}
+                  xxl={6}
+                  style={{ display: "flex" }}
+                >
+                  <Card
+                    hoverable
+                    style={{
+                      borderRadius: 12,
+                      boxShadow: "0 2px 12px #f0f1f2",
+                      width: "100%",
+                      minWidth: 0,
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      background: "#fff0f0",
+                    }}
+                    cover={
+                      <div style={{ position: "relative" }}>
+                        <img
+                          alt={event.name}
+                          src={event.cover}
+                          style={{
+                            height: "clamp(140px, 18vw, 180px)",
+                            objectFit: "cover",
+                            width: "100%",
+                            borderTopLeftRadius: 12,
+                            borderTopRightRadius: 12,
+                            transition: "height 0.2s",
+                          }}
+                        />
+                        <Tag
+                          color="red"
+                          style={{
+                            position: "absolute",
+                            top: 12,
+                            left: 12,
+                            fontWeight: 600,
+                            fontSize: 14,
+                            borderRadius: 6,
+                            padding: "2px 12px",
+                          }}
+                        >
+                          {event.category}
+                        </Tag>
+                      </div>
+                    }
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, fontSize: 18 }}>
+                        {event.name}
+                      </span>
+                      <Tag
+                        color="red"
+                        style={{
+                          fontWeight: 500,
+                          fontSize: 13,
+                          borderRadius: 6,
+                        }}
+                      >
+                        Cancelled
+                      </Tag>
+                    </div>
+                    <div style={{ marginBottom: 4, color: "#555" }}>
+                      <b>Location:</b> {event.location}
+                    </div>
+                    <div style={{ color: "#555" }}>
+                      <b>Contact:</b> {event.contact}
+                    </div>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </div>
+        </>
+      )}
+      <Divider />
+      {/* Normal Events */}
       <Row gutter={[24, 24]}>
         {filteredEvents.length === 0 ? (
           <Col span={24}>
@@ -145,7 +252,6 @@ function Events() {
           </Col>
         ) : (
           filteredEvents.map((event) => {
-            // Centralized button logic
             let bookingDisabled = false;
             let bookingLabel = "Bookings";
             if (
@@ -208,31 +314,6 @@ function Events() {
                       >
                         {event.category}
                       </Tag>
-                      <Tooltip title="Edit Event">
-                        <Button
-                          type="text"
-                          icon={<EditOutlined style={{ color: "white" }} />}
-                          style={{
-                            position: "absolute",
-                            top: 12,
-                            right: 12,
-                            backgroundColor: "rgba(0, 0, 0, 0.4)",
-                            backdropFilter: "blur(4px)",
-                            borderRadius: "50%",
-                            width: 32,
-                            height: 32,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            border: "none",
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsEditModalOpen(true)
-                            setSelectedEvent(event);
-                          }}
-                        />
-                      </Tooltip>
                     </div>
                   }
                   actions={[
@@ -292,26 +373,6 @@ function Events() {
           })
         )}
       </Row>
-      <FloatButton.Group
-        trigger="click"
-        style={{ insetInlineEnd: 24 }}
-        icon={<AppstoreAddOutlined />}
-      >
-        <Tooltip title="Pending/Not Approved Events">
-          <FloatButton icon={<ClockCircleOutlined />} />
-        </Tooltip>
-        <Tooltip title="Create Event">
-          <FloatButton
-            icon={<FileAddOutlined />}
-            onClick={() => setIsCreateModalOpen(true)}
-          />
-        </Tooltip>
-      </FloatButton.Group>
-      <CreateEvent
-        isOpen={isCreateModalOpen}
-        onModalClose={() => setIsCreateModalOpen(false)}
-      />
-      <EditEvent isOpen={isEditModalOpen} onModalClose={() => setIsEditModalOpen(false)} record={selectedEvent}/>
     </div>
   );
 }

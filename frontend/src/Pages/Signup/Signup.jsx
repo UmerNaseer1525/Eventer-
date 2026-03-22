@@ -23,7 +23,6 @@ function Signup() {
       role: "organizer",
       profileImage: "profile.png",
     };
-    console.log(update_value);
 
     setIsLoading(true);
 
@@ -121,6 +120,7 @@ function Signup() {
                 prefix={<EditOutlined className={style.inputIcon} />}
               />
             </Form.Item>
+
             <Form.Item
               name={"username"}
               label={"Username"}
@@ -176,10 +176,7 @@ function Signup() {
               name={"phone"}
               label={"Phone Number"}
               rules={[
-                {
-                  required: true,
-                  message: "Enter Phone Number",
-                },
+                { required: true, message: "Enter Phone Number" },
                 {
                   pattern: /^\+?[0-9]+$/,
                   message: "Only numbers are allowed (0-9) without space",

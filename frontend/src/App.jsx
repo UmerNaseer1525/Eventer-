@@ -17,6 +17,7 @@ import MainLayout from "./Components/MainLayout";
 import Dashboard from "./Pages/Dashboard/Dashboard";
 import Login from "./Pages/Login/Login";
 import Signup from "./Pages/Signup/Signup";
+import LandingPage from "./Pages/Landing/LandingPage";
 import Settings from "./Pages/Setting/Settings";
 import Events from "./Pages/Events/Events";
 import Users from "./Pages/Users/Users";
@@ -44,6 +45,10 @@ function authLoader() {
 const router = createBrowserRouter([
   {
     path: "/",
+    element: <LandingPage />,
+  },
+  {
+    path: "/login",
     element: <Login />,
   },
   {

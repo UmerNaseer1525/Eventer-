@@ -1,4 +1,4 @@
-import { LockOutlined, UserOutlined, MailOutlined } from "@ant-design/icons";
+import { LockOutlined, MailOutlined } from "@ant-design/icons";
 import { Button, Card, Form, Input, notification, Spin } from "antd";
 import { useNavigate } from "react-router-dom";
 import style from "./login.module.css";

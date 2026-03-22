@@ -1,8 +1,7 @@
-import { Form, Input, Modal, Select, Button, notification, Upload } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
+import { Form, Input, Modal, Select, Button, notification } from "antd";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { addEvent } from "../Services/eventSlice";
+import { addRequest } from "../Services/requestSlice";
 
 export default function CreateEvent({ isOpen, onModalClose }) {
   const [form] = Form.useForm();
@@ -24,10 +23,10 @@ export default function CreateEvent({ isOpen, onModalClose }) {
         ...values,
         id: Date.now(),
         status: "Upcoming",
-        isApproved: false,
+        approvedStatus: "Pending",
       };
 
-      dispatch(addEvent(newEvent));
+      dispatch(addRequest(newEvent));
       notification.success({
         title: "Event Created",
         description: "Your event has been created and is pending approval.",
@@ -99,7 +98,8 @@ export default function CreateEvent({ isOpen, onModalClose }) {
             { required: true, message: "Please enter the location" },
             {
               pattern: /^[a-zA-Z0-9, ]+$/,
-              message: "Location cannot contain special characters (commas allowed)",
+              message:
+                "Location cannot contain special characters (commas allowed)",
             },
           ]}
         >
@@ -135,4 +135,3 @@ export default function CreateEvent({ isOpen, onModalClose }) {
     </Modal>
   );
 }
-
