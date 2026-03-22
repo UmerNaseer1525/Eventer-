@@ -1,14 +1,15 @@
 import {
+  EditOutlined,
   LockOutlined,
   MailOutlined,
   PhoneOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Button, Form, Input, InputNumber, notification, Spin } from "antd";
+import { Button, Form, Input, notification, Spin } from "antd";
 import { useNavigate } from "react-router-dom";
 import style from "./signup.module.css";
 import { useState } from "react";
-import { addUser } from "../../Services/userAuth";
+import { addUser } from "../../Services/userService";
 
 function Signup() {
   const [api, contextHolder] = notification.useNotification();
@@ -96,7 +97,11 @@ function Signup() {
                 },
               ]}
             >
-              <Input size="large" placeholder="First Name" />
+              <Input
+                size="large"
+                placeholder="First Name"
+                prefix={<EditOutlined className={style.inputIcon} />}
+              />
             </Form.Item>
 
             <Form.Item
@@ -110,7 +115,11 @@ function Signup() {
                 },
               ]}
             >
-              <Input size="large" placeholder="Last Name" />
+              <Input
+                size="large"
+                placeholder="Last Name"
+                prefix={<EditOutlined className={style.inputIcon} />}
+              />
             </Form.Item>
             <Form.Item
               name={"username"}
@@ -180,7 +189,7 @@ function Signup() {
               <Input
                 size="large"
                 placeholder="Phone Number"
-                prefix={<PhoneOutlined />}
+                prefix={<PhoneOutlined className={style.inputIcon} />}
               />
             </Form.Item>
 
@@ -202,7 +211,7 @@ function Signup() {
           </div>
 
           <p className={style.signinText}>
-            Already have an account? <a href="/signin">Sign In</a>
+            Already have an account? <a href="/">Sign In</a>
           </p>
         </div>
 

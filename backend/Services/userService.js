@@ -5,7 +5,7 @@ const getAllUsers = async () => {
 };
 
 const getUserByEmail = async (userEmail) => {
-  return await User.findOne({ email: userEmail });
+  return await User.findOne({ email: userEmail }, "-password");
 };
 
 const deleteUser = async (userEmail) => {
@@ -17,42 +17,25 @@ const createUser = async (userData) => {
   return await user.save();
 };
 
-const updatePassword = async (userEmail, newPassword) => {
-  return await User.updateOne(
-    { email: userEmail },
-    { $set: { password: newPassword } },
-  );
-};
-
-const updateProfileImage = async (userEmail, profileImage) => {
-  return await User.updateOne(
-    { email: userEmail },
-    { $set: { profileImage: profileImage } },
-  );
-};
-
-const updatePhone = async (userEmail, phone) => {
-  return await User.updateOne({ email: userEmail }, { $set: { phone: phone } });
-};
-
-const updateStatus = async (userEmail, newStatus) => {
-  return await User.updateOne(
-    { email: userEmail },
-    { $set: { status: newStatus } },
-  );
-};
-
-const updateName = async (userEmail, firstName, lastName) => {
+const updateUser = async (userEmail, values) => {
   const updateFields = {};
-  if (firstName) updateFields.firstName = firstName;
-  if (lastName) updateFields.lastName = lastName;
+  const { firstName, lastName, username, password, phone, profileImage } =
+    values;
+
+  if (firstName !== undefined) updateFields.firstName = firstName;
+  if (lastName !== undefined) updateFields.lastName = lastName;
+  if (username !== undefined) updateFields.username = username;
+  if (password !== undefined) updateFields.password = password;
+  if (phone !== undefined) updateFields.phone = phone;
+  if (profileImage !== undefined) updateFields.profileImage = profileImage;
+
   return await User.updateOne({ email: userEmail }, { $set: updateFields });
 };
 
-const updateUsername = async (userEmail, newUserName) => {
-  return await User.updateOne(
-    { email: userEmail },
-    { $set: { username: newUserName } },
+const updateStatus = async (email, newStatus) => {
+  return await user.updateOne(
+    { email: email },
+    { $set: { status: newStatus } },
   );
 };
 
@@ -60,11 +43,7 @@ module.exports = {
   getAllUsers,
   createUser,
   deleteUser,
-  updatePassword,
-  updateProfileImage,
-  updatePhone,
-  updateStatus,
-  updateName,
-  updateUsername,
+  updateUser,
   getUserByEmail,
+  updateStatus,
 };

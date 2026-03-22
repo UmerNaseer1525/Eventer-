@@ -18,7 +18,7 @@ const getUserByEmail = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    // Don't send password in response
+
     const { password, ...userWithoutPassword } = user.toObject();
     res.status(200).json(userWithoutPassword);
   } catch (error) {
@@ -74,13 +74,18 @@ const createUser = async (req, res) => {
         .json({ message: "User already Exist with this email" });
     }
 
-    // Hash password before saving
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    let profileImagePath = req.body.profileImage;
+    if (req.file) {
+      profileImagePath = `/uploads/${req.file.filename}`;
+    }
 
     const userData = {
       ...req.body,
       password: hashedPassword,
+      profileImage: profileImagePath,
     };
 
     const user = await userServices.createUser(userData);
@@ -88,6 +93,7 @@ const createUser = async (req, res) => {
     res.status(201).json({
       message: "User created successfully",
       userId: user._id,
+      profileImage: user.profileImage,
     });
   } catch (error) {
     console.error("Error creating user:", error);
@@ -108,70 +114,10 @@ const deleteUser = async (req, res) => {
   }
 };
 
-const updatePassword = async (req, res) => {
-  try {
-    const { email } = req.params;
-    const { password } = req.body;
-    if (!password) {
-      return res.status(400).json({ message: "Password is required" });
-    }
-    const result = await userServices.updatePassword(email, password);
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.status(200).json({ message: "Password updated successfully" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-const updateProfileImage = async (req, res) => {
-  try {
-    const { email } = req.params;
-    const { profileImage } = req.body;
-    if (!profileImage) {
-      return res.status(400).json({ message: "Profile image URL is required" });
-    }
-    const result = await userServices.updateProfileImage(email, profileImage);
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.status(200).json({ message: "Profile image updated successfully" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-const updatePhone = async (req, res) => {
-  try {
-    const { email } = req.params;
-    const { phone } = req.body;
-    if (!phone) {
-      return res.status(400).json({ message: "Phone number is required" });
-    }
-    const result = await userServices.updatePhone(email, phone);
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.status(200).json({ message: "Phone updated successfully" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 const updateStatus = async (req, res) => {
   try {
     const { email } = req.params;
-    const { status } = req.body;
-    if (!status) {
-      return res.status(400).json({ message: "Status is required" });
-    }
-    if (!["active", "blocked"].includes(status)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid status. Must be 'active' or 'blocked'" });
-    }
-    const result = await userServices.updateStatus(email, status);
+    const result = await userServices.updateStatus(email, req.body);
     if (result.matchedCount === 0) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -181,38 +127,86 @@ const updateStatus = async (req, res) => {
   }
 };
 
-const updateName = async (req, res) => {
+const updateUser = async (req, res) => {
   try {
     const { email } = req.params;
-    const { firstName, lastName } = req.body;
-    if (!firstName && !lastName) {
-      return res.status(400).json({
-        message: "At least one name field (firstName or lastName) is required",
-      });
+    const allowedFields = [
+      "firstName",
+      "lastName",
+      "username",
+      "password",
+      "phone",
+      "profileImage",
+      "status",
+    ];
+
+    const user = await userServices.getUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-    const result = await userServices.updateName(email, firstName, lastName);
+
+    const updateData = {};
+    for (const field of allowedFields) {
+      if (field === "profileImage") {
+        if (req.file) {
+          updateData.profileImage = `/uploads/${req.file.filename}`;
+        } else if (
+          Object.prototype.hasOwnProperty.call(req.body, "profileImage") &&
+          req.body.profileImage
+        ) {
+          updateData.profileImage = req.body.profileImage;
+        } else {
+          updateData.profileImage = user.profileImage;
+        }
+        continue;
+      }
+
+      const hasField = Object.prototype.hasOwnProperty.call(req.body, field);
+      const incomingValue = hasField ? req.body[field] : undefined;
+      const isEmptyString =
+        typeof incomingValue === "string" && incomingValue.trim() === "";
+      const useOldValue =
+        !hasField ||
+        incomingValue === undefined ||
+        incomingValue === null ||
+        isEmptyString;
+
+      if (field === "password") {
+        if (hasField && incomingValue !== undefined && incomingValue !== null) {
+          if (typeof incomingValue !== "string") {
+            return res
+              .status(400)
+              .json({ message: "Password must be a string" });
+          }
+        }
+
+        if (useOldValue) {
+          updateData.password = user.password;
+        } else {
+          const saltRounds = 10;
+          updateData.password = await bcrypt.hash(incomingValue, saltRounds);
+        }
+
+        continue;
+      }
+
+      updateData[field] = useOldValue ? user[field] : incomingValue;
+    }
+
+    if (
+      updateData.status !== undefined &&
+      !["active", "blocked"].includes(updateData.status)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Invalid status. Must be 'active' or 'blocked'" });
+    }
+
+    const result = await userServices.updateUser(email, updateData);
     if (result.matchedCount === 0) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json({ message: "Name updated successfully" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-const updateUsername = async (req, res) => {
-  const { id } = req.params;
-  const { username } = req.body;
-  if (!username) {
-    return res.status(400).json({ message: "username is required" });
-  }
-
-  try {
-    const result = await userServices.updateUsername(username);
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.status(200).json({ message: "Username updated successfully" });
+    res.status(200).json({ message: "User updated successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -222,12 +216,8 @@ module.exports = {
   getUsers,
   createUser,
   deleteUser,
-  updatePassword,
-  updateProfileImage,
-  updatePhone,
-  updateStatus,
-  updateName,
-  updateUsername,
+  updateUser,
   getUserByEmail,
   loginUser,
+  updateStatus,
 };

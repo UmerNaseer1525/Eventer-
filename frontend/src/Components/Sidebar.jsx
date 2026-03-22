@@ -10,10 +10,9 @@ import {
   UserOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
-import { Button } from "antd";
-import React from "react";
+import { Menu, Button } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
-import { logout } from "../Services/userAuth";
+import { logout } from "../Services/userService";
 import style from "./sidebar.module.css";
 
 function Sidebar() {
@@ -21,16 +20,41 @@ function Sidebar() {
   const location = useLocation();
 
   const menuItems = [
-    { path: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
-    { path: "/events", icon: <ScheduleOutlined />, label: "Manage Events" },
-    { path: "/users", icon: <UserOutlined />, label: "Users" },
-    { path: "/categories", icon: <AppstoreOutlined />, label: "Categories" },
-    { path: "/bookings", icon: <CalendarOutlined />, label: "Bookings" },
-    { path: "/payments", icon: <CreditCardOutlined />, label: "Payments" },
-    { path: "/reports", icon: <BarChartOutlined />, label: "Reports" },
-    { path: "/settings", icon: <SettingOutlined />, label: "Settings" },
+    { key: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
     {
-      path: "/notifications",
+      key: "/admin-dashboard",
+      icon: <DashboardOutlined />,
+      label: "Admin Dashboard",
+    },
+    { key: "/events", icon: <ScheduleOutlined />, label: "Manage Events" },
+    { key: "/my-events", icon: <ScheduleOutlined />, label: "My Events" },
+    { key: "/analytics", icon: <BarChartOutlined />, label: "Analytics" },
+    { key: "/users", icon: <UserOutlined />, label: "Users" },
+    { key: "/admin-profile", icon: <UserOutlined />, label: "Admin Profile" },
+    { key: "/my-profile", icon: <UserOutlined />, label: "My Profile" },
+    {
+      key: "/manage-events",
+      icon: <ScheduleOutlined />,
+      label: "Admin Manage Events",
+    },
+    { key: "/manage-users", icon: <UserOutlined />, label: "Manage Users" },
+    {
+      key: "/manage-categories",
+      icon: <AppstoreOutlined />,
+      label: "Manage Categories",
+    },
+    {
+      key: "/manage-bookings",
+      icon: <CreditCardOutlined />,
+      label: "Bookings & Payments",
+    },
+    { key: "/categories", icon: <AppstoreOutlined />, label: "Categories" },
+    { key: "/bookings", icon: <CalendarOutlined />, label: "Bookings" },
+    { key: "/payments", icon: <CreditCardOutlined />, label: "Payments" },
+    { key: "/reports", icon: <BarChartOutlined />, label: "Reports" },
+    { key: "/settings", icon: <SettingOutlined />, label: "Settings" },
+    {
+      key: "/notifications",
       icon: <NotificationOutlined />,
       label: "Notifications",
     },
@@ -38,7 +62,11 @@ function Sidebar() {
 
   const handleLogout = () => {
     logout(); // Clear token and user data from localStorage
-    navigate("/signin", { replace: true });
+    navigate("/", { replace: true });
+  };
+
+  const handleMenuClick = ({ key }) => {
+    navigate(key);
   };
 
   return (
@@ -54,19 +82,14 @@ function Sidebar() {
         </div>
 
         <div className={style.sidebar_menu}>
-          {menuItems.map((item) => (
-            <Button
-              key={item.path}
-              type="default"
-              className={`${style.menu_button} ${
-                location.pathname === item.path ? style.menu_button_active : ""
-              }`}
-              onClick={() => navigate(item.path)}
-            >
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
-            </Button>
-          ))}
+          <Menu
+            mode="inline"
+            theme="dark"
+            selectedKeys={[location.pathname]}
+            items={menuItems}
+            onClick={handleMenuClick}
+            className={style.antd_menu}
+          />
         </div>
       </div>
 
