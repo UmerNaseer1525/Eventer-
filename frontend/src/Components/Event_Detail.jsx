@@ -33,7 +33,7 @@ export default function Event_Detail({ open, onClose, event }) {
       title={
         <Space direction="vertical" size={0}>
           <Typography.Title level={3} style={{ margin: 0 }}>
-            {event.name}
+            {event.title}
           </Typography.Title>
           <Space>
             <Tag color="purple">{event.category}</Tag>
@@ -55,7 +55,7 @@ export default function Event_Detail({ open, onClose, event }) {
         style={{
           width: "100%",
           height: 220,
-          background: `url(${event.cover}) center/cover no-repeat`,
+          background: `url(${event.bannerImage}) center/cover no-repeat`,
           borderTopLeftRadius: 8,
           borderTopRightRadius: 8,
         }}
@@ -74,7 +74,7 @@ export default function Event_Detail({ open, onClose, event }) {
               </>
             }
           >
-            {event.date || "-"}
+            {event.date || "-"} {event.time ? `/ ${event.time}` : null}
           </Descriptions.Item>
           <Descriptions.Item
             label={
@@ -85,15 +85,7 @@ export default function Event_Detail({ open, onClose, event }) {
           >
             {event.location}
           </Descriptions.Item>
-          <Descriptions.Item
-            label={
-              <>
-                <PhoneOutlined /> Contact
-              </>
-            }
-          >
-            {event.contact}
-          </Descriptions.Item>
+          {/* Contact field removed, not in Event model */}
           <Descriptions.Item
             label={
               <>
@@ -106,11 +98,15 @@ export default function Event_Detail({ open, onClose, event }) {
           <Descriptions.Item
             label={
               <>
-                <TeamOutlined /> Guests
+                <TeamOutlined /> Capacity
               </>
             }
           >
-            {event.number_of_guests}
+            {event.capacity}
+          </Descriptions.Item>
+
+          <Descriptions.Item label={<>Ticket Price</>}>
+            {event.ticketPrice}
           </Descriptions.Item>
         </Descriptions>
         <Divider />

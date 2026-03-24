@@ -8,25 +8,11 @@ const requestSlice = createSlice({
       state.push(action.payload);
     },
 
-    approveRequest: (state, action) => {
-      return state.filter((req) => req.id !== action.payload);
-    },
-
-    rejectRequest: (state, action) => {
-      return state.map((req) => {
-        if (req.id === action.payload.id) {
-          return {
-            ...req,
-            approvedStatus: action.payload.approvedStatus,
-          };
-        } else {
-          return req;
-        }
-      });
+    removeRequest: (state, action) => {
+      return state.filter((req) => req.eventId !== action.payload);
     },
   },
 });
 
-export const { addRequest, approveRequest, rejectRequest } =
-  requestSlice.actions;
+export const { addRequest, removeRequest } = requestSlice.actions;
 export default requestSlice.reducer;

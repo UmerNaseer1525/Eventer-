@@ -48,7 +48,7 @@ function Events() {
       setIsLoading(false);
       notification.success({
         message: "Booking Successful",
-        description: `Successfully booked ${event_Detail.name}`,
+        description: `Successfully booked ${event_Detail.title}`,
       });
     }, 1000);
   }
@@ -57,25 +57,24 @@ function Events() {
     ? events.filter(
         (event) =>
           event &&
-          typeof event.name === "string" &&
+          typeof event.title === "string" &&
           typeof event.status === "string" &&
           typeof event.location === "string" &&
-          typeof event.contact === "string" &&
           typeof event.category === "string" &&
-          event.cover,
+          event.bannerImage,
       )
     : [];
 
   const filteredEvents = validEvents
     .filter((event) => event.status.toLowerCase() !== "completed")
     .filter((event) => {
-      const matchesName = event.name
+      const matchesTitle = event.title
         .toLowerCase()
         .includes(search.toLowerCase());
       const matchesStatus =
         status === "all" ? true : event.status.toLowerCase() === status;
       return (
-        matchesName &&
+        matchesTitle &&
         matchesStatus &&
         event.status.toLowerCase() !== "cancelled"
       );
@@ -84,12 +83,12 @@ function Events() {
   const cancelledEvents = validEvents
     .filter((event) => event.status.toLowerCase() === "cancelled")
     .filter((event) => {
-      const matchesName = event.name
+      const matchesTitle = event.title
         .toLowerCase()
         .includes(search.toLowerCase());
       const matchesStatus =
         status === "all" ? true : event.status.toLowerCase() === status;
-      return matchesName && matchesStatus;
+      return matchesTitle && matchesStatus;
     });
 
   return (
@@ -180,8 +179,8 @@ function Events() {
                     cover={
                       <div style={{ position: "relative" }}>
                         <img
-                          alt={event.name}
-                          src={event.cover}
+                          alt={event.title}
+                          src={event.bannerImage}
                           style={{
                             height: "clamp(140px, 18vw, 180px)",
                             objectFit: "cover",
@@ -217,7 +216,7 @@ function Events() {
                       }}
                     >
                       <span style={{ fontWeight: 600, fontSize: 18 }}>
-                        {event.name}
+                        {event.title}
                       </span>
                       <Tag
                         color="red"
@@ -292,8 +291,8 @@ function Events() {
                   cover={
                     <div style={{ position: "relative" }}>
                       <img
-                        alt={event.name}
-                        src={event.cover}
+                        alt={event.title}
+                        src={event.bannerImage}
                         style={{
                           height: "clamp(140px, 18vw, 180px)",
                           objectFit: "cover",
@@ -347,7 +346,7 @@ function Events() {
                     }}
                   >
                     <span style={{ fontWeight: 600, fontSize: 18 }}>
-                      {event.name}
+                      {event.title}
                     </span>
                     <Tag
                       color={

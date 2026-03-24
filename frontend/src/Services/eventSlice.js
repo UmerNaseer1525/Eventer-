@@ -5,68 +5,74 @@ const eventSlice = createSlice({
   initialState: [
     {
       id: 1,
-      cover:
+      bannerImage:
         "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
-      name: "Tech Conference 2026",
+      title: "Tech Conference 2026",
       category: "Conference",
       status: "Upcoming",
       location: "Expo Center, City A",
-      contact: "+1234567890",
+      capacity: 200,
+      ticketPrice: 500,
       isApproved: false,
     },
     {
       id: 2,
-      cover:
+      bannerImage:
         "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80",
-      name: "Music Fest",
+      title: "Music Fest",
       category: "Concert",
       status: "Cancelled",
       location: "Open Grounds, City B",
-      contact: "+9876543210",
+      capacity: 350,
+      ticketPrice: 800,
       isApproved: true,
     },
     {
       id: 3,
-      cover:
+      bannerImage:
         "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80",
-      name: "Startup Meetup",
+      title: "Startup Meetup",
       category: "Meetup",
       status: "Completed",
       location: "Tech Park, City C",
-      contact: "+1122334455",
+      capacity: 120,
+      ticketPrice: 0,
       isApproved: false,
     },
     {
       id: 4,
-      cover:
+      bannerImage:
         "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
-      name: "Tech Conference",
+      title: "Tech Conference",
       category: "Conference",
       status: "Upcoming",
       location: "Expo Center, City A",
-      contact: "+1234567890",
+      capacity: 250,
+      ticketPrice: 600,
       isApproved: true,
     },
     {
       id: 5,
-      cover:
+      bannerImage:
         "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80",
-      name: "Music Festival",
+      title: "Music Festival",
       category: "Concert",
       status: "Ongoing",
       location: "Open Grounds, City B",
-      contact: "+9876543210",
+      capacity: 400,
+      ticketPrice: 1000,
       isApproved: true,
     },
     {
       id: 6,
-      cover:
+      bannerImage:
         "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80",
-      name: "Startup Meetup",
+      title: "Startup Meetup",
       category: "Meetup",
       status: "Completed",
       location: "Tech Park, City C",
-      contact: "+1122334455",
+      capacity: 80,
+      ticketPrice: 0,
       isApproved: true,
     },
   ],
@@ -97,9 +103,55 @@ const eventSlice = createSlice({
         }
       });
     },
+
+    updateApprovedStatus: (state, action) => {
+      return state.map((event) => {
+        if (event.id === action.payload.id) {
+          return {
+            ...event,
+            approvedStatus: "Pending",
+          };
+        } else {
+          return event;
+        }
+      });
+    },
+
+    eventRejected: (state, action) => {
+      return state.map((event) => {
+        if (event.id === action.payload.id) {
+          return {
+            ...event,
+            approvedStatus: "Rejected",
+            reason: action.payload.reason,
+          };
+        } else {
+          return event;
+        }
+      });
+    },
+    eventApproved: (state, action) => {
+      return state.map((event) => {
+        if (event.id === action.payload.id) {
+          return {
+            ...event,
+            approvedStatus: "Accepted",
+          };
+        } else {
+          return event;
+        }
+      });
+    },
   },
 });
 
-export const { addEvent, deleteEvent, updateEvent, updateStatus } =
-  eventSlice.actions;
+export const {
+  addEvent,
+  deleteEvent,
+  updateEvent,
+  updateStatus,
+  eventApproved,
+  eventRejected,
+  updateApprovedStatus,
+} = eventSlice.actions;
 export default eventSlice.reducer;

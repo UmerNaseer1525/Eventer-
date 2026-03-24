@@ -59,20 +59,19 @@ function MyEvents() {
         .filter(
           (event) =>
             event &&
-            typeof event.name === "string" &&
+            typeof event.title === "string" &&
             typeof event.status === "string" &&
             typeof event.location === "string" &&
-            typeof event.contact === "string" &&
             typeof event.category === "string" &&
-            event.cover,
+            event.bannerImage,
         )
         .filter((event) => {
-          const matchesName = event.name
+          const matchesTitle = event.title
             .toLowerCase()
             .includes(search.toLowerCase());
           const matchesStatus =
             status === "all" ? true : event.status.toLowerCase() === status;
-          return matchesName && matchesStatus;
+          return matchesTitle && matchesStatus;
         })
     : [];
 
@@ -143,7 +142,7 @@ function MyEvents() {
             } else if (statusLower === "ongoing") {
               bookingDisabled = true;
               bookingLabel = "Contact Management";
-            } else if (event.number_of_guests <= 0) {
+            } else if (event.capacity <= 0) {
               bookingDisabled = true;
               bookingLabel = "Book Full";
             }
@@ -172,8 +171,8 @@ function MyEvents() {
                   cover={
                     <div style={{ position: "relative" }}>
                       <img
-                        alt={event.name}
-                        src={event.cover}
+                        alt={event.title}
+                        src={event.bannerImage}
                         style={{
                           height: "clamp(140px, 18vw, 180px)",
                           objectFit: "cover",
@@ -276,7 +275,7 @@ function MyEvents() {
                     }}
                   >
                     <span style={{ fontWeight: 600, fontSize: 18 }}>
-                      {event.name}
+                      {event.title}
                     </span>
                     <Select
                       defaultValue={event.status}

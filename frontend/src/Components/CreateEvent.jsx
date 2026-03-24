@@ -10,6 +10,7 @@ import {
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { addRequest } from "../Services/requestSlice";
+import { addEvent } from "../Services/eventSlice";
 
 export default function CreateEvent({ isOpen, onModalClose }) {
   const [form] = Form.useForm();
@@ -25,6 +26,10 @@ export default function CreateEvent({ isOpen, onModalClose }) {
   //   });
 
   const onFinish = (values) => {
+    const dateTime = values.date;
+    const date = dateTime.format("YYYY-MM-DD");
+    const time = dateTime.format("HH:mm");
+
     setLoading(true);
     setTimeout(() => {
       const newEvent = {
@@ -32,9 +37,13 @@ export default function CreateEvent({ isOpen, onModalClose }) {
         id: Date.now(),
         status: "Upcoming",
         approvedStatus: "Pending",
+        date: date,
+        time: time,
+        organizer: JSON.parse(localStorage.getItem("user")).email,
       };
 
-      dispatch(addRequest(newEvent));
+      dispatch(addRequest({ eventId: newEvent.id }));
+      dispatch(addEvent(newEvent));
       notification.success({
         title: "Event Created",
         description: "Your event has been created and is pending approval.",
@@ -73,17 +82,28 @@ export default function CreateEvent({ isOpen, onModalClose }) {
     >
       <Form form={form} layout="vertical" onFinish={onFinish}>
         <Form.Item
-          name="name"
-          label="Event Name"
+          name="title"
+          label="Event Title"
           rules={[
-            { required: true, message: "Please enter the event name" },
+            { required: true, message: "Please enter the event title" },
             {
               pattern: /^[a-zA-Z0-9 ]+$/,
-              message: "Name cannot contain special characters",
+              message: "Title cannot contain special characters",
             },
           ]}
         >
           <Input placeholder="e.g. SOFTECH" />
+        </Form.Item>
+
+        <Form.Item
+          name={"description"}
+          label="Event Detail"
+          rules={[{ required: true, message: "Please enter event detail" }]}
+        >
+          <Input.TextArea
+            rows={4}
+            placeholder="event related information including rules and regulations"
+          />
         </Form.Item>
 
         <Form.Item
@@ -121,19 +141,7 @@ export default function CreateEvent({ isOpen, onModalClose }) {
           <Input placeholder="e.g. London" />
         </Form.Item>
 
-        <Form.Item
-          name="contact"
-          label="Contact Number"
-          rules={[
-            { required: true, message: "Please enter the contact number" },
-            {
-              pattern: /^\+?[0-9]+$/,
-              message: "Only numbers and '+' are allowed",
-            },
-          ]}
-        >
-          <Input placeholder="e.g. 03024200127" />
-        </Form.Item>
+        {/* Contact field removed, not in Event model */}
         <Form.Item
           name={"date"}
           label="Date of Event"
@@ -147,10 +155,10 @@ export default function CreateEvent({ isOpen, onModalClose }) {
           />
         </Form.Item>
         <Form.Item
-          name={"number_of_guests"}
-          label="Number Of Guests"
+          name={"capacity"}
+          label="Capacity"
           rules={[
-            { required: true, message: "Please enter number of guests" },
+            { required: true, message: "Please enter event capacity" },
             {
               pattern: /^[0-9]+$/,
               message: "Only numbers are allowed",
@@ -159,22 +167,41 @@ export default function CreateEvent({ isOpen, onModalClose }) {
         >
           <Input
             type="number"
-            min={50}
-            placeholder="minimum 50"
+            min={1}
+            placeholder="e.g. 100"
             style={{ width: "100%" }}
           />
         </Form.Item>
 
         <Form.Item
-          name="cover"
-          label="Cover Image URL"
+          name="bannerImage"
+          label="Banner Image URL"
           initialValue="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80"
           rules={[
-            { required: true, message: "Please provide a cover image URL" },
+            { required: false },
             { type: "url", message: "Please enter a valid URL" },
           ]}
         >
           <Input placeholder="Enter image URL from Unsplash or similar" />
+        </Form.Item>
+
+        <Form.Item
+          name="ticketPrice"
+          label="Ticket Price"
+          rules={[
+            { required: true, message: "Please enter the ticket price" },
+            {
+              pattern: /^[0-9]+$/,
+              message: "Only numbers are allowed",
+            },
+          ]}
+        >
+          <Input
+            type="number"
+            min={0}
+            placeholder="e.g. 500"
+            style={{ width: "100%" }}
+          />
         </Form.Item>
       </Form>
     </Modal>
