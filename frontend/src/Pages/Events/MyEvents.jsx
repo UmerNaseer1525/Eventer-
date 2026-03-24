@@ -16,15 +16,16 @@ import {
   Tooltip,
   Empty,
   Alert,
-  notification,
   Select,
+  Popconfirm,
 } from "antd";
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { addBooking } from "../../Services/bookingSlice";
 import CreateEvent from "../../Components/CreateEvent";
 import EditEvent from "../../Components/EditEvent";
-import { updateStatus } from "../../Services/eventSlice";
+import { deleteEvent, updateStatus } from "../../Services/eventSlice";
+import Event_Detail from "../../Components/Event_Detail";
+import EventApprovalQueue from "../../Components/EventApprovalQueue";
 
 function MyEvents() {
   const [search, setSearch] = useState("");
@@ -33,9 +34,13 @@ function MyEvents() {
   const dispatch = useDispatch();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectEditEvent, setSelectEditEvent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isEventApprovalQueueOpen, setIsEventApprovalQueueOpen] =
+    useState(false);
 
   function onSearchFilter(e) {
     setSearch(e.target.value);
@@ -47,26 +52,6 @@ function MyEvents() {
 
   function handleStatusChange(eventId, value) {
     dispatch(updateStatus({ id: eventId, status: value }));
-  }
-
-  function handleBookings(event_Detail) {
-    if (!event_Detail || !event_Detail.id) {
-      setError({
-        message: "Invalid event data. Cannot add booking.",
-        detail: event_Detail,
-      });
-      return;
-    }
-    setError(null);
-    setIsLoading(true);
-    setTimeout(() => {
-      dispatch(addBooking(event_Detail));
-      setIsLoading(false);
-      notification.success({
-        message: "Booking Successful",
-        description: `Successfully booked ${event_Detail.name}`,
-      });
-    }, 1000);
   }
 
   const filteredEvents = Array.isArray(events)
@@ -96,7 +81,7 @@ function MyEvents() {
       <h1 style={{ marginBottom: "20px" }}>My Events</h1>
       {error && (
         <Alert
-          message="Error"
+          title="Error"
           description={
             <div>
               {error.message}
@@ -151,15 +136,16 @@ function MyEvents() {
           filteredEvents.map((event) => {
             let bookingDisabled = false;
             let bookingLabel = "Bookings";
-            if (
-              event.status.toLowerCase() === "completed" ||
-              event.status.toLowerCase() === "cancelled"
-            ) {
+            const statusLower = event.status.toLowerCase();
+            if (statusLower === "completed" || statusLower === "cancelled") {
               bookingDisabled = true;
               bookingLabel = "Not Available";
-            } else if (event.status.toLowerCase() === "ongoing") {
+            } else if (statusLower === "ongoing") {
               bookingDisabled = true;
               bookingLabel = "Contact Management";
+            } else if (event.number_of_guests <= 0) {
+              bookingDisabled = true;
+              bookingLabel = "Book Full";
             }
             return (
               <Col
@@ -232,7 +218,7 @@ function MyEvents() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setIsEditModalOpen(true);
-                            setSelectedEvent(event);
+                            setSelectEditEvent(event);
                           }}
                         />
                       </Tooltip>
@@ -240,21 +226,45 @@ function MyEvents() {
                   }
                   actions={[
                     <Button
-                      type="primary"
+                      type="default"
                       key="detail"
-                      style={{ borderRadius: 6 }}
+                      size="large"
+                      style={{
+                        borderRadius: 6,
+                        width: "90%",
+                      }}
+                      onClick={() => {
+                        setSelectedEvent(event);
+                        setIsDrawerOpen(true);
+                      }}
                     >
                       Detail
                     </Button>,
-                    <Button
-                      key="bookings"
-                      loading={isLoading}
-                      style={{ borderRadius: 6 }}
-                      onClick={() => handleBookings(event)}
-                      disabled={bookingDisabled}
+                    <Popconfirm
+                      title="Delete Event"
+                      description="Are You Sure?"
+                      onConfirm={() => {
+                        dispatch(deleteEvent({ id: event.id }));
+                      }}
+                      okText="Delete"
+                      canelText="No"
                     >
-                      {bookingLabel}
-                    </Button>,
+                      <Button
+                        type="primary"
+                        key="detail"
+                        size="large"
+                        style={{
+                          borderRadius: 6,
+                          width: "90%",
+                        }}
+                        // onClick={() => {
+                        //   dispatch(deleteEvent({ id: event.id }));
+                        // }}
+                        danger
+                      >
+                        Delete
+                      </Button>
+                    </Popconfirm>,
                   ]}
                 >
                   <div
@@ -297,7 +307,10 @@ function MyEvents() {
         icon={<AppstoreAddOutlined />}
       >
         <Tooltip title="Pending/Not Approved Events">
-          <FloatButton icon={<ClockCircleOutlined />} />
+          <FloatButton
+            icon={<ClockCircleOutlined />}
+            onClick={() => setIsEventApprovalQueueOpen(true)}
+          />
         </Tooltip>
         <Tooltip title="Create Event">
           <FloatButton
@@ -313,7 +326,16 @@ function MyEvents() {
       <EditEvent
         isOpen={isEditModalOpen}
         onModalClose={() => setIsEditModalOpen(false)}
-        record={selectedEvent}
+        record={selectEditEvent}
+      />
+      <Event_Detail
+        event={selectedEvent}
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+      />
+      <EventApprovalQueue
+        open={isEventApprovalQueueOpen}
+        onClose={() => setIsEventApprovalQueueOpen(false)}
       />
     </div>
   );

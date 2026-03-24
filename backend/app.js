@@ -40,6 +40,14 @@ app.get("/", (req, res) => {
   });
 });
 
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR:", err);
+  res
+    .status(500)
+    .json({ message: "Internal Server Error", error: err.message });
+});
+
 connectDB()
   .then(() => {
     app.listen(PORT, () => {

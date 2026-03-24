@@ -1,4 +1,12 @@
-import { Form, Input, Modal, Select, Button, notification } from "antd";
+import {
+  Form,
+  Input,
+  Modal,
+  Select,
+  Button,
+  notification,
+  DatePicker,
+} from "antd";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { addRequest } from "../Services/requestSlice";
@@ -8,13 +16,13 @@ export default function CreateEvent({ isOpen, onModalClose }) {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
 
-  const getBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
+  // const getBase64 = (file) =>
+  //   new Promise((resolve, reject) => {
+  //     const reader = new FileReader();
+  //     reader.readAsDataURL(file);
+  //     reader.onload = () => resolve(reader.result);
+  //     reader.onerror = (error) => reject(error);
+  //   });
 
   const onFinish = (values) => {
     setLoading(true);
@@ -35,6 +43,13 @@ export default function CreateEvent({ isOpen, onModalClose }) {
       onModalClose();
       setLoading(false);
     }, 1000);
+  };
+
+  const disabledDate = (current) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return current && current.toDate() < today;
   };
 
   return (
@@ -118,6 +133,36 @@ export default function CreateEvent({ isOpen, onModalClose }) {
           ]}
         >
           <Input placeholder="e.g. 03024200127" />
+        </Form.Item>
+        <Form.Item
+          name={"date"}
+          label="Date of Event"
+          rules={[{ required: true, message: "Please enter date of event" }]}
+        >
+          <DatePicker
+            format={["DD/MM/YYYY", "DD/MM/YY", "DD-MM-YYYY", "DD-MM-YY"]}
+            style={{ width: "100%" }}
+            disabledDate={disabledDate}
+            showTime
+          />
+        </Form.Item>
+        <Form.Item
+          name={"number_of_guests"}
+          label="Number Of Guests"
+          rules={[
+            { required: true, message: "Please enter number of guests" },
+            {
+              pattern: /^[0-9]+$/,
+              message: "Only numbers are allowed",
+            },
+          ]}
+        >
+          <Input
+            type="number"
+            min={50}
+            placeholder="minimum 50"
+            style={{ width: "100%" }}
+          />
         </Form.Item>
 
         <Form.Item

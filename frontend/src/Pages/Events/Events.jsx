@@ -263,6 +263,9 @@ function Events() {
             } else if (event.status.toLowerCase() === "ongoing") {
               bookingDisabled = true;
               bookingLabel = "Contact Management";
+            } else if (event.number_of_guests <= 0) {
+              bookingDisabled = true;
+              bookingLabel = "Booking Full";
             }
             return (
               <Col

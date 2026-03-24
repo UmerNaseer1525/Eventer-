@@ -6,7 +6,13 @@ const bookingSlice = createSlice({
   reducers: {
     setBookings: (state, action) => action.payload,
     addBooking: (state, action) => {
-      state.push(action.payload);
+      state.push({
+        ...action.payload,
+        number_of_guests:
+          action.payload.number_of_guests > 0
+            ? action.payload.number_of_guests - 1
+            : action.payload.number_of_guests,
+      });
     },
     updateBooking: (state, action) => {
       const idx = state.findIndex((b) => b.id === action.payload.id);

@@ -21,7 +21,7 @@ export default function EditEvent({ isOpen, onModalClose, record }) {
     setTimeout(() => {
       const updated_event = {
         ...record,
-        ...values
+        ...values,
       };
 
       dispatch(updateEvent(updated_event));
@@ -95,7 +95,8 @@ export default function EditEvent({ isOpen, onModalClose, record }) {
             { required: true, message: "Please enter the location" },
             {
               pattern: /^[a-zA-Z0-9, ]+$/,
-              message: "Location cannot contain special characters (commas allowed)",
+              message:
+                "Location cannot contain special characters (commas allowed)",
             },
           ]}
         >
@@ -130,4 +131,3 @@ export default function EditEvent({ isOpen, onModalClose, record }) {
     </Modal>
   );
 }
-

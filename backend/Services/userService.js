@@ -4,7 +4,13 @@ const getAllUsers = async () => {
   return await User.find({});
 };
 
+// For login: include password
 const getUserByEmail = async (userEmail) => {
+  return await User.findOne({ email: userEmail });
+};
+
+// For returning user data to frontend: exclude password
+const getUserByEmailWithoutPassword = async (userEmail) => {
   return await User.findOne({ email: userEmail }, "-password");
 };
 
@@ -45,5 +51,6 @@ module.exports = {
   deleteUser,
   updateUser,
   getUserByEmail,
+  getUserByEmailWithoutPassword,
   updateStatus,
 };

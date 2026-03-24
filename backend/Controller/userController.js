@@ -14,13 +14,11 @@ const getUsers = async (req, res) => {
 const getUserByEmail = async (req, res) => {
   try {
     const { email } = req.params;
-    const user = await userServices.getUserByEmail(email);
+    const user = await userServices.getUserByEmailWithoutPassword(email);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    const { password, ...userWithoutPassword } = user.toObject();
-    res.status(200).json(userWithoutPassword);
+    res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -35,15 +33,23 @@ const loginUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    if (!user.password) {
+      return res
+        .status(400)
+        .json({ message: "password filed is missing in backend" });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res
+        .status(400)
+        .json({ message: "Invalid email or password. Please try again." });
     }
 
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: "1h" },
+      { expiresIn: "24h" },
     );
 
     res.status(200).json({
@@ -65,10 +71,8 @@ const loginUser = async (req, res) => {
 const createUser = async (req, res) => {
   const { email, password } = req.body;
   try {
-    console.log("Creating user with email:", email);
     const result = await userServices.getUserByEmail(email);
     if (result) {
-      console.log("User already exists with email:", email);
       return res
         .status(409)
         .json({ message: "User already Exist with this email" });
@@ -89,7 +93,7 @@ const createUser = async (req, res) => {
     };
 
     const user = await userServices.createUser(userData);
-    console.log("User created successfully:", user._id);
+
     res.status(201).json({
       message: "User created successfully",
       userId: user._id,

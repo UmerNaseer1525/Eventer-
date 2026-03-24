@@ -38,6 +38,7 @@ async function validateUser(data) {
     });
 
     if (!response.ok) {
+      console.log("Response not ok");
       const error_message = await response.json();
       return new Error(error_message.message || "Unable to Sign In");
     }
@@ -53,6 +54,7 @@ async function validateUser(data) {
 
     return result;
   } catch (error) {
+    console.log("Field Login");
     return new Error(error.message);
   }
 }
