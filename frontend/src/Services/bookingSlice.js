@@ -9,21 +9,11 @@ const bookingSlice = createSlice({
 
     // Add a new booking (called from Events.jsx handleBookings)
     addBooking: (state, action) => {
-<<<<<<< HEAD
       // Prevent duplicate bookings for the same event
       const exists = state.find((b) => b.id === action.payload.id);
       if (!exists) {
         state.push(action.payload);
       }
-=======
-      state.push({
-        ...action.payload,
-        number_of_guests:
-          action.payload.number_of_guests > 0
-            ? action.payload.number_of_guests - 1
-            : action.payload.number_of_guests,
-      });
->>>>>>> e99f22aa62d505d0af0d4f26a4580407d9dcf810
     },
 
     // Update an existing booking by id
