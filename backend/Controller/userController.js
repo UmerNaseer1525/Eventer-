@@ -121,7 +121,13 @@ const deleteUser = async (req, res) => {
 const updateStatus = async (req, res) => {
   try {
     const { email } = req.params;
-    const result = await userServices.updateStatus(email, req.body);
+    const status = req.query.status;
+    if (!status) {
+      return res
+        .status(400)
+        .json({ message: "Missing status query parameter" });
+    }
+    const result = await userServices.updateStatus(email, status);
     if (result.matchedCount === 0) {
       return res.status(404).json({ message: "User not found" });
     }

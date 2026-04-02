@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   CheckCircleOutlined,
   DeleteOutlined,
@@ -6,76 +6,37 @@ import {
   SearchOutlined,
   StopOutlined,
 } from "@ant-design/icons";
-import { Avatar, Button, Card, Input, Space, Table } from "antd";
+import {
+  Avatar,
+  Button,
+  Card,
+  Input,
+  Space,
+  Table,
+  notification,
+  Spin,
+} from "antd";
 import Highlighter from "react-highlight-words";
-import { useLoaderData } from "react-router-dom";
 import style from "./users.module.css";
 import UserProfile from "../../Components/UserProfile";
-
-const data = [
-  {
-    key: "1",
-    firstName: "Muhammad",
-    lastName: "Arslan",
-    username: "arslan2067",
-    email: "iqbalarslan009@gmail.com",
-    phone: "03024200127",
-    profileImage: "/profile.png",
-    status: "active",
-  },
-  {
-    key: "2",
-    firstName: "Sara",
-    lastName: "Ahmed",
-    username: "sara_ahmed",
-    email: "sara.ahmed@gmail.com",
-    phone: "03111234567",
-    profileImage: "/profile.png",
-    status: "active",
-  },
-  {
-    key: "3",
-    firstName: "Ali",
-    lastName: "Hassan",
-    username: "ali_hassan",
-    email: "ali.hassan@yahoo.com",
-    phone: "03219876543",
-    profileImage: "/profile.png",
-    status: "blocked",
-  },
-  {
-    key: "4",
-    firstName: "Fatima",
-    lastName: "Khan",
-    username: "fatima_k",
-    email: "fatima.khan@outlook.com",
-    phone: "03334567890",
-    profileImage: "/profile.png",
-    status: "active",
-  },
-  {
-    key: "5",
-    firstName: "Usman",
-    lastName: "Malik",
-    username: "usman_malik",
-    email: "usman.malik@gmail.com",
-    phone: "03451234567",
-    profileImage: "/profile.png",
-    status: "blocked",
-  },
-];
+import { useSelector, useDispatch } from "react-redux";
+import { fetchUsers, updateUserStatus } from "../../Services/userSlice";
 
 function Users() {
-  const users = useLoaderData();
+  const dispatch = useDispatch();
+  const users = useSelector((state) => state.user.users);
   console.log(users);
 
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState("");
-  const [tableData, setTableData] = useState(users);
-  const [isBlocked, setIsBlocked] = useState(false);
+  const [loadingUserEmail, setLoadingUserEmail] = useState(null);
   const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const searchInput = useRef(null);
+
+  useEffect(() => {
+    dispatch(fetchUsers());
+  }, [dispatch]);
 
   function handleSearch(selectedKeys, confirm, dataIndex) {
     confirm();
@@ -88,11 +49,24 @@ function Users() {
     setSearchText("");
   }
 
-  function handleStatusChange(id, newStatus) {
-    setIsBlocked((prev) => !prev);
-    setTableData((prev) =>
-      prev.map((row) => (row._id === id ? { ...row, status: newStatus } : row)),
-    );
+  async function handleStatusChange(email, newStatus) {
+    setLoadingUserEmail(email);
+    try {
+      await dispatch(updateUserStatus(email, newStatus));
+      notification.success({
+        message: `User status updated`,
+        description: `User has been ${newStatus === "blocked" ? "blocked" : "activated"}.`,
+        placement: "topRight",
+      });
+    } catch (error) {
+      notification.error({
+        message: `Failed to update status`,
+        description: error.message || "An error occurred.",
+        placement: "topRight",
+      });
+    } finally {
+      setLoadingUserEmail(null);
+    }
   }
 
   function renderHighlight(text, dataIndex) {
@@ -247,12 +221,17 @@ function Users() {
             </Button>
             <Button
               onClick={() =>
-                // handleStatusChange(id, !isBlocked ? "Blocke" : "Active")
-                console.log("Clicked")
+                handleStatusChange(
+                  record.email,
+                  record.status === "active" ? "blocked" : "active",
+                )
               }
-              title={!isBlocked ? "Block" : "Unblock"}
+              title={record.status === "active" ? "Block" : "Unblock"}
+              disabled={loadingUserEmail === record.email}
             >
-              {!isBlocked ? (
+              {loadingUserEmail === record.email ? (
+                <Spin size="small" />
+              ) : record.status === "active" ? (
                 <StopOutlined style={{ color: "red" }} />
               ) : (
                 <CheckCircleOutlined style={{ color: "green" }} />
@@ -270,7 +249,7 @@ function Users() {
       <Card>
         <Table
           columns={columns}
-          dataSource={tableData}
+          dataSource={Array.isArray(users) ? users : []}
           rowKey="_id"
           pagination={{ pageSize: 10 }}
         />

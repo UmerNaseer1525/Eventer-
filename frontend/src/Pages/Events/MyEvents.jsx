@@ -227,7 +227,7 @@ function MyEvents() {
                     <Button
                       type="default"
                       key="detail"
-                      size="large"
+                      size="medium"
                       style={{
                         borderRadius: 6,
                         width: "90%",
@@ -249,9 +249,9 @@ function MyEvents() {
                       canelText="No"
                     >
                       <Button
-                        type="primary"
+                        type="default"
                         key="detail"
-                        size="large"
+                        size="medium"
                         style={{
                           borderRadius: 6,
                           width: "90%",

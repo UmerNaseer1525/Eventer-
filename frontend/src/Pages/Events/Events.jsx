@@ -14,6 +14,7 @@ import {
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { addBooking } from "../../Services/bookingSlice";
+import Event_Detail from "../../Components/Event_Detail";
 
 function Events() {
   const [search, setSearch] = useState("");
@@ -22,8 +23,10 @@ function Events() {
   console.log(events);
   const dispatch = useDispatch();
 
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
+  const [bookedEventId, setBookedEventId] = useState(-1);
 
   function onSearchFilter(e) {
     setSearch(e.target.value);
@@ -42,14 +45,13 @@ function Events() {
       return;
     }
     setError(null);
-    setIsLoading(true);
     setTimeout(() => {
       dispatch(addBooking(event_Detail));
-      setIsLoading(false);
       notification.success({
         message: "Booking Successful",
         description: `Successfully booked ${event_Detail.title}`,
       });
+      setBookedEventId(-1);
     }, 1000);
   }
 
@@ -233,7 +235,7 @@ function Events() {
                       <b>Location:</b> {event.location}
                     </div>
                     <div style={{ color: "#555" }}>
-                      <b>Contact:</b> {event.contact}
+                      <b>Organized By:</b> {event?.organizer ?? "Unknown"}
                     </div>
                   </Card>
                 </Col>
@@ -322,16 +324,25 @@ function Events() {
                     <Button
                       type="primary"
                       key="detail"
-                      style={{ borderRadius: 6 }}
+                      style={{ borderRadius: 6, width: "90%" }}
+                      size="medium"
+                      onClick={() => {
+                        setIsDetailDrawerOpen(true);
+                        setSelectedEvent(event);
+                      }}
                     >
                       Detail
                     </Button>,
                     <Button
                       key="bookings"
-                      loading={isLoading}
-                      style={{ borderRadius: 6 }}
-                      onClick={() => handleBookings(event)}
+                      loading={bookedEventId === event.id}
+                      style={{ borderRadius: 6, width: "90%" }}
                       disabled={bookingDisabled}
+                      size="medium"
+                      onClick={() => {
+                        handleBookings(event);
+                        setBookedEventId(event.id);
+                      }}
                     >
                       {bookingLabel}
                     </Button>,
@@ -367,7 +378,7 @@ function Events() {
                     <b>Location:</b> {event.location}
                   </div>
                   <div style={{ color: "#555" }}>
-                    <b>Contact:</b> {event.contact}
+                    <b>Organized By:</b> {event?.organizer ?? "Unknown"}
                   </div>
                 </Card>
               </Col>
@@ -375,6 +386,11 @@ function Events() {
           })
         )}
       </Row>
+      <Event_Detail
+        event={selectedEvent}
+        open={isDetailDrawerOpen}
+        onClose={() => setIsDetailDrawerOpen(false)}
+      />
     </div>
   );
 }

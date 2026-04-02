@@ -39,7 +39,7 @@ const updateUser = async (userEmail, values) => {
 };
 
 const updateStatus = async (email, newStatus) => {
-  return await user.updateOne(
+  return await User.updateOne(
     { email: email },
     { $set: { status: newStatus } },
   );

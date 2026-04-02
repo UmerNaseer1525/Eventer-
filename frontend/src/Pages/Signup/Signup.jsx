@@ -9,7 +9,7 @@ import { Button, Form, Input, notification, Spin } from "antd";
 import { useNavigate } from "react-router-dom";
 import style from "./signup.module.css";
 import { useState } from "react";
-import { addUser } from "../../Services/userService";
+import { createNewUser } from "../../Services/userSlice";
 
 function Signup() {
   const [api, contextHolder] = notification.useNotification();
@@ -27,7 +27,7 @@ function Signup() {
     setIsLoading(true);
 
     try {
-      const result = await addUser(update_value);
+      const result = await createNewUser(update_value);
 
       if (result instanceof Error) {
         throw result;

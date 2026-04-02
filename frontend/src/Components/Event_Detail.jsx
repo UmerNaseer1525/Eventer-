@@ -69,43 +69,47 @@ export default function Event_Detail({ open, onClose, event }) {
         >
           <Descriptions.Item
             label={
-              <>
-                <CalendarOutlined /> Date
-              </>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <CalendarOutlined /> <span>Date</span>
+              </span>
             }
           >
             {event.date || "-"} {event.time ? `/ ${event.time}` : null}
           </Descriptions.Item>
           <Descriptions.Item
             label={
-              <>
-                <EnvironmentOutlined /> Location
-              </>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <EnvironmentOutlined /> <span>Location</span>
+              </span>
             }
           >
             {event.location}
           </Descriptions.Item>
-          {/* Contact field removed, not in Event model */}
           <Descriptions.Item
             label={
-              <>
-                <UserOutlined /> Organizer
-              </>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <UserOutlined /> <span>Organizer</span>
+              </span>
             }
           >
             {event.organizer || "-"}
           </Descriptions.Item>
           <Descriptions.Item
             label={
-              <>
-                <TeamOutlined /> Capacity
-              </>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <TeamOutlined /> <span>Capacity</span>
+              </span>
             }
           >
             {event.capacity}
           </Descriptions.Item>
-
-          <Descriptions.Item label={<>Ticket Price</>}>
+          <Descriptions.Item
+            label={
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                Ticket Price
+              </span>
+            }
+          >
             {event.ticketPrice}
           </Descriptions.Item>
         </Descriptions>
