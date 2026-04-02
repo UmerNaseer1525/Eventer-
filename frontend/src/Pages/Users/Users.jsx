@@ -8,6 +8,7 @@ import {
 } from "@ant-design/icons";
 import {
   Avatar,
+  Alert,
   Button,
   Card,
   Input,
@@ -27,6 +28,8 @@ function Users() {
   const users = useSelector((state) => state.user.users);
   console.log(users);
 
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState("");
   const [loadingUserEmail, setLoadingUserEmail] = useState(null);
@@ -35,7 +38,43 @@ function Users() {
   const searchInput = useRef(null);
 
   useEffect(() => {
-    dispatch(fetchUsers());
+    let isMounted = true;
+
+    const loadUsers = async () => {
+      setIsPageLoading(true);
+      setLoadError("");
+
+      try {
+        await dispatch(fetchUsers());
+      } catch (error) {
+        const message = error.message || "Unable to fetch users.";
+        if (isMounted) {
+          setLoadError(message);
+        }
+        notification.error({
+          message: "Failed to load users",
+          description: message,
+          placement: "topRight",
+        });
+      } finally {
+        if (isMounted) {
+          setIsPageLoading(false);
+        }
+      }
+    };
+
+    loadUsers();
+
+    const handleAuthChange = () => {
+      loadUsers();
+    };
+
+    window.addEventListener("auth-change", handleAuthChange);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("auth-change", handleAuthChange);
+    };
   }, [dispatch]);
 
   function handleSearch(selectedKeys, confirm, dataIndex) {
@@ -247,11 +286,21 @@ function Users() {
     <div style={{ padding: "10px" }}>
       <h1 style={{ marginBottom: "20px" }}>Users</h1>
       <Card>
+        {loadError ? (
+          <Alert
+            type="error"
+            showIcon
+            message="Users could not be loaded"
+            description={loadError}
+            style={{ marginBottom: 16 }}
+          />
+        ) : null}
         <Table
           columns={columns}
           dataSource={Array.isArray(users) ? users : []}
           rowKey="_id"
           pagination={{ pageSize: 10 }}
+          loading={isPageLoading}
         />
       </Card>
       {selectedUser && (

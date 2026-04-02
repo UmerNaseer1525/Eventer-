@@ -6,14 +6,10 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.1.0",
-<<<<<<< HEAD
     "mongoose": "^9.2.3",
     "multer": "^2.1.1"
-=======
-    "mongoose": "^9.2.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
->>>>>>> 2bbf99f5cae0f86d92b328f8d23717bd7401c48a
   }
 }

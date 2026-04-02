@@ -78,6 +78,11 @@ export const createNewUser = (userRecord) => async (dispatch) => {
 export const fetchUsers = () => {
   return async (dispatch) => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Authentication token not found. Please log in again.");
+      }
+
       const response = await fetch(USER_BASE_URL, {
         method: "GET",
         headers: getAuthHeaders(),
@@ -111,39 +116,33 @@ export const deleteUserRecord = (userEmail) => {
 };
 
 export const updateUserRecord = (userData, email) => async (dispatch) => {
-  try {
-    const storedUser = JSON.parse(localStorage.getItem("user") || "null");
-    const targetEmail = email || userData.email || storedUser?.email;
+  const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+  const targetEmail = email || userData.email || storedUser?.email;
 
-    if (!targetEmail) {
-      throw new Error("User email not found for update");
-    }
-
-    const response = await fetch(`${USER_BASE_URL}${targetEmail}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(userData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Unable to update user");
-    }
-
-    const result = await response.json().catch(() => ({}));
-
-    if (storedUser && storedUser.email === targetEmail) {
-      localStorage.setItem(
-        "user",
-        JSON.stringify({ ...storedUser, ...userData }),
-      );
-      window.dispatchEvent(new Event("auth-change"));
-    }
-
-    dispatch(userSlice.actions.updateUser({ ...userData, email: targetEmail }));
-  } catch (error) {
-    throw error;
+  if (!targetEmail) {
+    throw new Error("User email not found for update");
   }
+
+  const response = await fetch(`${USER_BASE_URL}${targetEmail}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(userData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Unable to update user");
+  }
+
+  if (storedUser && storedUser.email === targetEmail) {
+    localStorage.setItem(
+      "user",
+      JSON.stringify({ ...storedUser, ...userData }),
+    );
+    window.dispatchEvent(new Event("auth-change"));
+  }
+
+  dispatch(userSlice.actions.updateUser({ ...userData, email: targetEmail }));
 };
 
 export const updateUserStatus = (email, newStatus) => async (dispatch) => {
