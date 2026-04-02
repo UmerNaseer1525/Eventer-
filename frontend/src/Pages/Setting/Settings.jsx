@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { UploadOutlined } from "@ant-design/icons";
 import {
   Alert,
   Button,
   Card,
   Form,
-  Image,
   Input,
   Spin,
   Upload,
@@ -13,7 +12,7 @@ import {
   notification,
 } from "antd";
 import styles from "./setting.module.css";
-import { updateUser } from "../../Services/userService";
+import { updateUserRecord } from "../../Services/userSlice";
 
 function Settings() {
   const [api, contextHolder] = notification.useNotification();
@@ -26,16 +25,19 @@ function Settings() {
   async function onFinish(values) {
     setIsLoading(true);
     try {
-      const loggedInUser = JSON.parse(localStorage.getItem("user") || "null");
-      const payload = Object.fromEntries(
-        Object.entries(values).filter(([, value]) => {
-          if (value === undefined || value === null) return false;
-          if (typeof value === "string") return value.trim() !== "";
-          return true;
-        }),
-      );
+      const payload = Object.keys(values).reduce((acc, key) => {
+        const value = values[key];
+        if (
+          value !== undefined &&
+          value !== null &&
+          (typeof value !== "string" || value.trim() !== "")
+        ) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {});
 
-      const result = await updateUser(payload, loggedInUser?.email);
+      const result = updateUserRecord(payload);
       if (result instanceof Error) {
         throw result;
       }

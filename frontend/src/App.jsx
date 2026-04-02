@@ -32,7 +32,7 @@ import {
   redirect,
   RouterProvider,
 } from "react-router-dom";
-import { getAllUsersLoader } from "./Services/userService";
+import { fetchUsers } from "./Services/userSlice";
 
 function authLoader() {
   const token = localStorage.getItem("token");
@@ -122,7 +122,6 @@ const router = createBrowserRouter([
             <Users />
           </MainLayout>
         ),
-        loader: getAllUsersLoader,
       },
       {
         path: "/admin-profile",

@@ -15,6 +15,9 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+// Serve uploaded images statically
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/users", userRoute);
@@ -36,6 +39,14 @@ app.get("/", (req, res) => {
       payments: "/api/payments",
     },
   });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR:", err);
+  res
+    .status(500)
+    .json({ message: "Internal Server Error", error: err.message });
 });
 
 connectDB()

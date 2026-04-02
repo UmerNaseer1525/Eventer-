@@ -2,6 +2,7 @@ import { Form, Input, Modal, Select, Button, notification } from "antd";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { updateEvent } from "../Services/eventSlice";
+// import moment from "moment"; // Uncomment if you want to use moment for date parsing
 
 export default function EditEvent({ isOpen, onModalClose, record }) {
   const [form] = Form.useForm();
@@ -10,6 +11,12 @@ export default function EditEvent({ isOpen, onModalClose, record }) {
 
   useEffect(() => {
     if (isOpen && record) {
+      // If you want to use moment, uncomment the import and next lines
+      // const values = { ...record };
+      // if (record.date) {
+      //   values.date = moment(record.date, "YYYY-MM-DD");
+      // }
+      // form.setFieldsValue(values);
       form.setFieldsValue(record);
     } else {
       form.resetFields();
@@ -21,7 +28,7 @@ export default function EditEvent({ isOpen, onModalClose, record }) {
     setTimeout(() => {
       const updated_event = {
         ...record,
-        ...values
+        ...values,
       };
 
       dispatch(updateEvent(updated_event));
@@ -55,17 +62,28 @@ export default function EditEvent({ isOpen, onModalClose, record }) {
     >
       <Form form={form} layout="vertical" onFinish={onFinish}>
         <Form.Item
-          name="name"
-          label="Event Name"
+          name="title"
+          label="Event Title"
           rules={[
-            { required: true, message: "Please enter the event name" },
+            { required: true, message: "Please enter the event title" },
             {
               pattern: /^[a-zA-Z0-9 ]+$/,
-              message: "Name cannot contain special characters",
+              message: "Title cannot contain special characters",
             },
           ]}
         >
           <Input placeholder="e.g. SOFTECH" />
+        </Form.Item>
+
+        <Form.Item
+          name={"description"}
+          label="Event Detail"
+          rules={[{ required: true, message: "Please enter event detail" }]}
+        >
+          <Input.TextArea
+            rows={4}
+            placeholder="event related information including rules and regulations"
+          />
         </Form.Item>
 
         <Form.Item
@@ -95,7 +113,8 @@ export default function EditEvent({ isOpen, onModalClose, record }) {
             { required: true, message: "Please enter the location" },
             {
               pattern: /^[a-zA-Z0-9, ]+$/,
-              message: "Location cannot contain special characters (commas allowed)",
+              message:
+                "Location cannot contain special characters (commas allowed)",
             },
           ]}
         >
@@ -103,31 +122,62 @@ export default function EditEvent({ isOpen, onModalClose, record }) {
         </Form.Item>
 
         <Form.Item
-          name="contact"
-          label="Contact Number"
-          rules={[
-            { required: true, message: "Please enter the contact number" },
-            {
-              pattern: /^\+?[0-9]+$/,
-              message: "Only numbers and '+' are allowed",
-            },
-          ]}
+          name={"date"}
+          label="Date of Event"
+          rules={[{ required: true, message: "Please enter date of event" }]}
         >
-          <Input placeholder="e.g. 03024200127" />
+          <Input placeholder="YYYY-MM-DD" />
         </Form.Item>
 
         <Form.Item
-          name="cover"
-          label="Cover Image URL"
+          name={"capacity"}
+          label="Capacity"
           rules={[
-            { required: true, message: "Please provide a cover image URL" },
+            { required: true, message: "Please enter event capacity" },
+            {
+              pattern: /^[0-9]+$/,
+              message: "Only numbers are allowed",
+            },
+          ]}
+        >
+          <Input
+            type="number"
+            min={1}
+            placeholder="e.g. 100"
+            style={{ width: "100%" }}
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="bannerImage"
+          label="Banner Image URL"
+          rules={[
+            { required: false },
             { type: "url", message: "Please enter a valid URL" },
           ]}
         >
-          <Input placeholder="Enter image URL" />
+          <Input placeholder="Enter image URL from Unsplash or similar" />
+        </Form.Item>
+
+        <Form.Item
+          name="ticketPrice"
+          label="Ticket Price"
+          rules={[
+            { required: true, message: "Please enter the ticket price" },
+            {
+              pattern: /^[0-9]+$/,
+              message: "Only numbers are allowed",
+            },
+          ]}
+        >
+          <Input
+            type="number"
+            min={0}
+            placeholder="e.g. 500"
+            style={{ width: "100%" }}
+          />
         </Form.Item>
       </Form>
     </Modal>
   );
 }
-

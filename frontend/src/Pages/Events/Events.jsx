@@ -1,10 +1,4 @@
 import {
-  EditOutlined,
-  FileAddOutlined,
-  AppstoreAddOutlined,
-  ClockCircleOutlined,
-} from "@ant-design/icons";
-import {
   Card,
   Button,
   Row,
@@ -12,30 +6,27 @@ import {
   Tag,
   Input,
   Radio,
-  FloatButton,
-  Tooltip,
   Empty,
   Alert,
   notification,
+  Divider,
 } from "antd";
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { addBooking } from "../../Services/bookingSlice";
-import CreateEvent from "../../Components/CreateEvent";
-import EditEvent from "../../Components/EditEvent";
+import Event_Detail from "../../Components/Event_Detail";
 
 function Events() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const events = useSelector((state) => state.event);
-  console.log(events)
+  console.log(events);
   const dispatch = useDispatch();
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [selectedEvent, setSelectedEvent] = useState(null)
 
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
+  const [bookedEventId, setBookedEventId] = useState(-1);
 
   function onSearchFilter(e) {
     setSearch(e.target.value);
@@ -54,45 +45,60 @@ function Events() {
       return;
     }
     setError(null);
-    setIsLoading(true)
     setTimeout(() => {
       dispatch(addBooking(event_Detail));
-      setIsLoading(false)
       notification.success({
         message: "Booking Successful",
-        description: `Successfully booked ${event_Detail.name}`,
-      })
-    }, 1000)
+        description: `Successfully booked ${event_Detail.title}`,
+      });
+      setBookedEventId(-1);
+    }, 1000);
   }
 
-  const filteredEvents = Array.isArray(events)
-    ? events
-        .filter(
-          (event) =>
-            event &&
-            typeof event.name === "string" &&
-            typeof event.status === "string" &&
-            typeof event.location === "string" &&
-            typeof event.contact === "string" &&
-            typeof event.category === "string" &&
-            event.cover,
-        ).filter(event => event.status.toLowerCase() !== 'completed')
-        .filter((event) => {
-          const matchesName = event.name
-            .toLowerCase()
-            .includes(search.toLowerCase());
-          const matchesStatus =
-            status === "all" ? true : event.status.toLowerCase() === status;
-          return matchesName && matchesStatus;
-        })
+  const validEvents = Array.isArray(events)
+    ? events.filter(
+        (event) =>
+          event &&
+          typeof event.title === "string" &&
+          typeof event.status === "string" &&
+          typeof event.location === "string" &&
+          typeof event.category === "string" &&
+          event.bannerImage,
+      )
     : [];
+
+  const filteredEvents = validEvents
+    .filter((event) => event.status.toLowerCase() !== "completed")
+    .filter((event) => {
+      const matchesTitle = event.title
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      const matchesStatus =
+        status === "all" ? true : event.status.toLowerCase() === status;
+      return (
+        matchesTitle &&
+        matchesStatus &&
+        event.status.toLowerCase() !== "cancelled"
+      );
+    });
+
+  const cancelledEvents = validEvents
+    .filter((event) => event.status.toLowerCase() === "cancelled")
+    .filter((event) => {
+      const matchesTitle = event.title
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      const matchesStatus =
+        status === "all" ? true : event.status.toLowerCase() === status;
+      return matchesTitle && matchesStatus;
+    });
 
   return (
     <div style={{ padding: "10px" }}>
       <h1 style={{ marginBottom: "20px" }}>Manage Events</h1>
       {error && (
         <Alert
-          message="Error"
+          title="Error"
           description={
             <div>
               {error.message}
@@ -123,11 +129,11 @@ function Events() {
             value={status}
             onChange={onStatusFilter}
             size="large"
-            style={{ 
-              display: "flex", 
-              flexWrap: "wrap", 
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
               gap: "8px",
-              width: "100%"
+              width: "100%",
             }}
           >
             <Radio.Button value={"all"}>All</Radio.Button>
@@ -138,6 +144,108 @@ function Events() {
           </Radio.Group>
         </Col>
       </Row>
+      {/* Cancelled Events Alert */}
+      {cancelledEvents.length > 0 && (
+        <>
+          <Alert
+            message={<span>Below are cancelled events</span>}
+            type="error"
+            showIcon
+            style={{ marginBottom: 24 }}
+          />
+          <div style={{ marginBottom: 32 }}>
+            <Row gutter={[24, 24]}>
+              {cancelledEvents.map((event) => (
+                <Col
+                  key={event.id}
+                  xs={24}
+                  sm={12}
+                  md={12}
+                  lg={12}
+                  xl={8}
+                  xxl={6}
+                  style={{ display: "flex" }}
+                >
+                  <Card
+                    hoverable
+                    style={{
+                      borderRadius: 12,
+                      boxShadow: "0 2px 12px #f0f1f2",
+                      width: "100%",
+                      minWidth: 0,
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      background: "#fff0f0",
+                    }}
+                    cover={
+                      <div style={{ position: "relative" }}>
+                        <img
+                          alt={event.title}
+                          src={event.bannerImage}
+                          style={{
+                            height: "clamp(140px, 18vw, 180px)",
+                            objectFit: "cover",
+                            width: "100%",
+                            borderTopLeftRadius: 12,
+                            borderTopRightRadius: 12,
+                            transition: "height 0.2s",
+                          }}
+                        />
+                        <Tag
+                          color="red"
+                          style={{
+                            position: "absolute",
+                            top: 12,
+                            left: 12,
+                            fontWeight: 600,
+                            fontSize: 14,
+                            borderRadius: 6,
+                            padding: "2px 12px",
+                          }}
+                        >
+                          {event.category}
+                        </Tag>
+                      </div>
+                    }
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, fontSize: 18 }}>
+                        {event.title}
+                      </span>
+                      <Tag
+                        color="red"
+                        style={{
+                          fontWeight: 500,
+                          fontSize: 13,
+                          borderRadius: 6,
+                        }}
+                      >
+                        Cancelled
+                      </Tag>
+                    </div>
+                    <div style={{ marginBottom: 4, color: "#555" }}>
+                      <b>Location:</b> {event.location}
+                    </div>
+                    <div style={{ color: "#555" }}>
+                      <b>Organized By:</b> {event?.organizer ?? "Unknown"}
+                    </div>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </div>
+        </>
+      )}
+      <Divider />
+      {/* Normal Events */}
       <Row gutter={[24, 24]}>
         {filteredEvents.length === 0 ? (
           <Col span={24}>
@@ -145,7 +253,6 @@ function Events() {
           </Col>
         ) : (
           filteredEvents.map((event) => {
-            // Centralized button logic
             let bookingDisabled = false;
             let bookingLabel = "Bookings";
             if (
@@ -157,6 +264,9 @@ function Events() {
             } else if (event.status.toLowerCase() === "ongoing") {
               bookingDisabled = true;
               bookingLabel = "Contact Management";
+            } else if (event.number_of_guests <= 0) {
+              bookingDisabled = true;
+              bookingLabel = "Booking Full";
             }
             return (
               <Col
@@ -183,8 +293,8 @@ function Events() {
                   cover={
                     <div style={{ position: "relative" }}>
                       <img
-                        alt={event.name}
-                        src={event.cover}
+                        alt={event.title}
+                        src={event.bannerImage}
                         style={{
                           height: "clamp(140px, 18vw, 180px)",
                           objectFit: "cover",
@@ -208,47 +318,31 @@ function Events() {
                       >
                         {event.category}
                       </Tag>
-                      <Tooltip title="Edit Event">
-                        <Button
-                          type="text"
-                          icon={<EditOutlined style={{ color: "white" }} />}
-                          style={{
-                            position: "absolute",
-                            top: 12,
-                            right: 12,
-                            backgroundColor: "rgba(0, 0, 0, 0.4)",
-                            backdropFilter: "blur(4px)",
-                            borderRadius: "50%",
-                            width: 32,
-                            height: 32,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            border: "none",
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsEditModalOpen(true)
-                            setSelectedEvent(event);
-                          }}
-                        />
-                      </Tooltip>
                     </div>
                   }
                   actions={[
                     <Button
                       type="primary"
                       key="detail"
-                      style={{ borderRadius: 6 }}
+                      style={{ borderRadius: 6, width: "90%" }}
+                      size="medium"
+                      onClick={() => {
+                        setIsDetailDrawerOpen(true);
+                        setSelectedEvent(event);
+                      }}
                     >
                       Detail
                     </Button>,
                     <Button
                       key="bookings"
-                      loading={isLoading}
-                      style={{ borderRadius: 6 }}
-                      onClick={() => handleBookings(event)}
+                      loading={bookedEventId === event.id}
+                      style={{ borderRadius: 6, width: "90%" }}
                       disabled={bookingDisabled}
+                      size="medium"
+                      onClick={() => {
+                        handleBookings(event);
+                        setBookedEventId(event.id);
+                      }}
                     >
                       {bookingLabel}
                     </Button>,
@@ -263,7 +357,7 @@ function Events() {
                     }}
                   >
                     <span style={{ fontWeight: 600, fontSize: 18 }}>
-                      {event.name}
+                      {event.title}
                     </span>
                     <Tag
                       color={
@@ -284,7 +378,7 @@ function Events() {
                     <b>Location:</b> {event.location}
                   </div>
                   <div style={{ color: "#555" }}>
-                    <b>Contact:</b> {event.contact}
+                    <b>Organized By:</b> {event?.organizer ?? "Unknown"}
                   </div>
                 </Card>
               </Col>
@@ -292,26 +386,11 @@ function Events() {
           })
         )}
       </Row>
-      <FloatButton.Group
-        trigger="click"
-        style={{ insetInlineEnd: 24 }}
-        icon={<AppstoreAddOutlined />}
-      >
-        <Tooltip title="Pending/Not Approved Events">
-          <FloatButton icon={<ClockCircleOutlined />} />
-        </Tooltip>
-        <Tooltip title="Create Event">
-          <FloatButton
-            icon={<FileAddOutlined />}
-            onClick={() => setIsCreateModalOpen(true)}
-          />
-        </Tooltip>
-      </FloatButton.Group>
-      <CreateEvent
-        isOpen={isCreateModalOpen}
-        onModalClose={() => setIsCreateModalOpen(false)}
+      <Event_Detail
+        event={selectedEvent}
+        open={isDetailDrawerOpen}
+        onClose={() => setIsDetailDrawerOpen(false)}
       />
-      <EditEvent isOpen={isEditModalOpen} onModalClose={() => setIsEditModalOpen(false)} record={selectedEvent}/>
     </div>
   );
 }

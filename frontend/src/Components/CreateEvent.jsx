@@ -1,7 +1,15 @@
-import { Form, Input, Modal, Select, Button, notification, Upload } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
+import {
+  Form,
+  Input,
+  Modal,
+  Select,
+  Button,
+  notification,
+  DatePicker,
+} from "antd";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
+import { addRequest } from "../Services/requestSlice";
 import { addEvent } from "../Services/eventSlice";
 
 export default function CreateEvent({ isOpen, onModalClose }) {
@@ -9,24 +17,32 @@ export default function CreateEvent({ isOpen, onModalClose }) {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
 
-  const getBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
+  // const getBase64 = (file) =>
+  //   new Promise((resolve, reject) => {
+  //     const reader = new FileReader();
+  //     reader.readAsDataURL(file);
+  //     reader.onload = () => resolve(reader.result);
+  //     reader.onerror = (error) => reject(error);
+  //   });
 
   const onFinish = (values) => {
+    const dateTime = values.date;
+    const date = dateTime.format("YYYY-MM-DD");
+    const time = dateTime.format("HH:mm");
+
     setLoading(true);
     setTimeout(() => {
       const newEvent = {
         ...values,
         id: Date.now(),
         status: "Upcoming",
-        isApproved: false,
+        approvedStatus: "Pending",
+        date: date,
+        time: time,
+        organizer: JSON.parse(localStorage.getItem("user")).email,
       };
 
+      dispatch(addRequest({ eventId: newEvent.id }));
       dispatch(addEvent(newEvent));
       notification.success({
         title: "Event Created",
@@ -36,6 +52,13 @@ export default function CreateEvent({ isOpen, onModalClose }) {
       onModalClose();
       setLoading(false);
     }, 1000);
+  };
+
+  const disabledDate = (current) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return current && current.toDate() < today;
   };
 
   return (
@@ -59,17 +82,28 @@ export default function CreateEvent({ isOpen, onModalClose }) {
     >
       <Form form={form} layout="vertical" onFinish={onFinish}>
         <Form.Item
-          name="name"
-          label="Event Name"
+          name="title"
+          label="Event Title"
           rules={[
-            { required: true, message: "Please enter the event name" },
+            { required: true, message: "Please enter the event title" },
             {
               pattern: /^[a-zA-Z0-9 ]+$/,
-              message: "Name cannot contain special characters",
+              message: "Title cannot contain special characters",
             },
           ]}
         >
           <Input placeholder="e.g. SOFTECH" />
+        </Form.Item>
+
+        <Form.Item
+          name={"description"}
+          label="Event Detail"
+          rules={[{ required: true, message: "Please enter event detail" }]}
+        >
+          <Input.TextArea
+            rows={4}
+            placeholder="event related information including rules and regulations"
+          />
         </Form.Item>
 
         <Form.Item
@@ -99,40 +133,77 @@ export default function CreateEvent({ isOpen, onModalClose }) {
             { required: true, message: "Please enter the location" },
             {
               pattern: /^[a-zA-Z0-9, ]+$/,
-              message: "Location cannot contain special characters (commas allowed)",
+              message:
+                "Location cannot contain special characters (commas allowed)",
             },
           ]}
         >
           <Input placeholder="e.g. London" />
         </Form.Item>
 
+        {/* Contact field removed, not in Event model */}
         <Form.Item
-          name="contact"
-          label="Contact Number"
+          name={"date"}
+          label="Date of Event"
+          rules={[{ required: true, message: "Please enter date of event" }]}
+        >
+          <DatePicker
+            format={["DD/MM/YYYY", "DD/MM/YY", "DD-MM-YYYY", "DD-MM-YY"]}
+            style={{ width: "100%" }}
+            disabledDate={disabledDate}
+            showTime
+          />
+        </Form.Item>
+        <Form.Item
+          name={"capacity"}
+          label="Capacity"
           rules={[
-            { required: true, message: "Please enter the contact number" },
+            { required: true, message: "Please enter event capacity" },
             {
-              pattern: /^\+?[0-9]+$/,
-              message: "Only numbers and '+' are allowed",
+              pattern: /^[0-9]+$/,
+              message: "Only numbers are allowed",
             },
           ]}
         >
-          <Input placeholder="e.g. 03024200127" />
+          <Input
+            type="number"
+            min={1}
+            placeholder="e.g. 100"
+            style={{ width: "100%" }}
+          />
         </Form.Item>
 
         <Form.Item
-          name="cover"
-          label="Cover Image URL"
+          name="bannerImage"
+          label="Banner Image URL"
           initialValue="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80"
           rules={[
-            { required: true, message: "Please provide a cover image URL" },
+            { required: false },
             { type: "url", message: "Please enter a valid URL" },
           ]}
         >
           <Input placeholder="Enter image URL from Unsplash or similar" />
         </Form.Item>
+
+        <Form.Item
+          name="ticketPrice"
+          label="Ticket Price"
+          rules={[
+            { required: true, message: "Please enter the ticket price" },
+            {
+              pattern: /^[0-9]+$/,
+              message: "Only numbers are allowed",
+            },
+          ]}
+        >
+          <Input
+            type="number"
+            min={0}
+            placeholder="e.g. 500"
+            style={{ width: "100%" }}
+          />
+        </Form.Item>
       </Form>
     </Modal>
   );
 }
-

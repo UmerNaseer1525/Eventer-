@@ -1,0 +1,9 @@
+-> change the status of the event as per the date
+    --> current time and date match with the event date and time status = ongoing
+    --> if date match but has remaining time status = Happening today
+    --> if date match but time pass status = completed
+    --> if date and time pass status = Completed
+    --> if date is less than today date status = Upcomming
+    --> use itself change the status of any to cancel
+
+-> when rejecting event. also give reason why the event rejected

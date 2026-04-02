@@ -1,10 +1,13 @@
 import { Card, Row, Col, Radio, Tag, Input, Button } from "antd";
+import { useState } from "react";
 import { useSelector } from "react-redux";
+import Event_Detail from "../../Components/Event_Detail";
 
 function Bookings() {
   const bookings = useSelector((state) => state.booking);
-  // const [status, setStatus]
-  console.log(bookings);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
+
   return (
     <div style={{ padding: "10px" }}>
       <h1 style={{ marginBottom: "20px" }}>Bookings</h1>
@@ -50,8 +53,8 @@ function Bookings() {
               cover={
                 <div style={{ position: "relative" }}>
                   <img
-                    alt={event.name}
-                    src={event.cover}
+                    alt={event.title}
+                    src={event.bannerImage}
                     style={{
                       height: 180,
                       objectFit: "cover",
@@ -77,7 +80,15 @@ function Bookings() {
                 </div>
               }
               actions={[
-                <Button type="primary" key="detail" style={{ borderRadius: 6 }}>
+                <Button
+                  type="default"
+                  key="detail"
+                  style={{ borderRadius: 6, width: "90%" }}
+                  onClick={() => {
+                    setSelectedEvent(event);
+                    setIsDetailDrawerOpen(true);
+                  }}
+                >
                   Detail
                 </Button>,
               ]}
@@ -91,7 +102,7 @@ function Bookings() {
                 }}
               >
                 <span style={{ fontWeight: 600, fontSize: 18 }}>
-                  {event.name}
+                  {event.title}
                 </span>
                 <Tag
                   color={
@@ -110,12 +121,17 @@ function Bookings() {
                 <b>Location:</b> {event.location}
               </div>
               <div style={{ color: "#555" }}>
-                <b>Contact:</b> {event.contact}
+                <b>Organized By:</b> {event?.organizer ?? "Unknown"}
               </div>
             </Card>
           </Col>
         ))}
       </Row>
+      <Event_Detail
+        open={isDetailDrawerOpen}
+        event={selectedEvent}
+        onClose={() => setIsDetailDrawerOpen(false)}
+      />
     </div>
   );
 }
