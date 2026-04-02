@@ -2,14 +2,26 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const notificationSlice = createSlice({
   name: "notification",
-  initialState: [],
+  initialState: {
+    admin: [],
+    user: [],
+  },
   reducers: {
     setNotifications: (state, action) => action.payload,
-    addNotification: (state, action) => {
-      state.push(action.payload);
+    addAdminNotification: (state, action) => {
+      state.admin.push(action.payload);
     },
-    removeNotification: (state, action) => {
-      return state.filter((n) => n.id !== action.payload);
+
+    addNotification: (state, action) => {
+      state.user.push(action.payload);
+    },
+
+    removeAdminNotification: (state, action) => {
+      return state.admin.filter((n) => n.id !== action.payload);
+    },
+
+    removeUserNotification: (state, action) => {
+      return state.user.filter((n) => n.id !== action.payload);
     },
     clearNotifications: () => [],
   },

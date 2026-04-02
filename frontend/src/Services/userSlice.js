@@ -123,10 +123,17 @@ export const updateUserRecord = (userData, email) => async (dispatch) => {
     throw new Error("User email not found for update");
   }
 
+  const token = localStorage.getItem("token");
+  const isFormData = userData instanceof FormData;
+
   const response = await fetch(`${USER_BASE_URL}${targetEmail}`, {
     method: "PUT",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(userData),
+    headers: isFormData
+      ? {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        }
+      : getAuthHeaders(),
+    body: isFormData ? userData : JSON.stringify(userData),
   });
 
   if (!response.ok) {
@@ -134,15 +141,31 @@ export const updateUserRecord = (userData, email) => async (dispatch) => {
     throw new Error(errorData.message || "Unable to update user");
   }
 
+  const responseData = await response.json();
+
+  const profilePatch = responseData?.user
+    ? responseData.user
+    : isFormData
+      ? {
+          firstName: userData.get("firstName") || undefined,
+          lastName: userData.get("lastName") || undefined,
+          phone: userData.get("phone") || undefined,
+          username: userData.get("username") || undefined,
+        }
+      : userData;
+
   if (storedUser && storedUser.email === targetEmail) {
     localStorage.setItem(
       "user",
-      JSON.stringify({ ...storedUser, ...userData }),
+      JSON.stringify({ ...storedUser, ...profilePatch }),
     );
     window.dispatchEvent(new Event("auth-change"));
   }
 
-  dispatch(userSlice.actions.updateUser({ ...userData, email: targetEmail }));
+  dispatch(
+    userSlice.actions.updateUser({ ...profilePatch, email: targetEmail }),
+  );
+  return responseData;
 };
 
 export const updateUserStatus = (email, newStatus) => async (dispatch) => {

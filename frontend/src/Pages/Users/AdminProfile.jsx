@@ -1,7 +1,7 @@
-import React from "react";
+import ProfilePage from "./ProfilePage";
 
 function AdminProfile() {
-  return <div>Admin Profile Page</div>;
+  return <ProfilePage title="Admin Profile" />;
 }
 
 export default AdminProfile;

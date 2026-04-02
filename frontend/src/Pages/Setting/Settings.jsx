@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { UploadOutlined } from "@ant-design/icons";
 import {
-  Alert,
+  Avatar,
   Button,
   Card,
   Form,
@@ -11,45 +11,137 @@ import {
   message,
   notification,
 } from "antd";
+import { useDispatch } from "react-redux";
 import styles from "./setting.module.css";
 import { updateUserRecord } from "../../Services/userSlice";
 
+const USER_BASE_URL = "http://localhost:3000/api/users";
+const BACKEND_BASE_URL = "http://localhost:3000";
+
+function getStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "null");
+  } catch {
+    return null;
+  }
+}
+
+function resolveImageUrl(imagePath) {
+  if (!imagePath) {
+    return "/profile.png";
+  }
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
+  return `${BACKEND_BASE_URL}${imagePath}`;
+}
+
 function Settings() {
+  const dispatch = useDispatch();
+  const [form] = Form.useForm();
   const [api, contextHolder] = notification.useNotification();
   const [isLoading, setIsLoading] = useState(false);
-  const defaultProfileImage = "/profile.png";
   const maxFileSizeInMB = 2;
-  // Simple string state for image URL
-  const [profileImage, setProfileImage] = useState(defaultProfileImage);
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState("");
+
+  const currentUser = useMemo(() => getStoredUser(), []);
+
+  useEffect(() => {
+    const loadSettingsData = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!currentUser?.email || !token) {
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const response = await fetch(
+          `${USER_BASE_URL}/${encodeURIComponent(currentUser.email)}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("Unable to fetch settings data");
+        }
+
+        const data = await response.json();
+        form.setFieldsValue({
+          firstName: data.firstName || "",
+          lastName: data.lastName || "",
+          username: data.username || "",
+          phone: data.phone || "",
+        });
+        setProfileImagePreview(resolveImageUrl(data.profileImage));
+      } catch (error) {
+        form.setFieldsValue({
+          firstName: currentUser.firstName || "",
+          lastName: currentUser.lastName || "",
+          username: currentUser.username || "",
+          phone: currentUser.phone || "",
+        });
+        setProfileImagePreview(resolveImageUrl(currentUser.profileImage));
+        api.warning({
+          message: "Settings Loaded Partially",
+          description: error.message,
+          placement: "topRight",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSettingsData();
+  }, [api, currentUser, form]);
 
   async function onFinish(values) {
     setIsLoading(true);
     try {
-      const payload = Object.keys(values).reduce((acc, key) => {
-        const value = values[key];
-        if (
-          value !== undefined &&
-          value !== null &&
-          (typeof value !== "string" || value.trim() !== "")
-        ) {
-          acc[key] = value;
-        }
-        return acc;
-      }, {});
+      const formData = new FormData();
 
-      const result = updateUserRecord(payload);
-      if (result instanceof Error) {
-        throw result;
+      if (values.firstName?.trim()) {
+        formData.append("firstName", values.firstName.trim());
       }
+      if (values.lastName?.trim()) {
+        formData.append("lastName", values.lastName.trim());
+      }
+      if (values.username?.trim()) {
+        formData.append("username", values.username.trim());
+      }
+      if (values.phone?.trim()) {
+        formData.append("phone", values.phone.trim());
+      }
+      if (values.password?.trim()) {
+        formData.append("password", values.password.trim());
+      }
+      if (profileImageFile) {
+        formData.append("profileImage", profileImageFile);
+      }
+
+      const response = await dispatch(updateUserRecord(formData));
+      const updatedUser = response?.user;
+
+      if (updatedUser?.profileImage) {
+        setProfileImagePreview(resolveImageUrl(updatedUser.profileImage));
+      }
+
       api.success({
-        title: "Successfully Updated",
-        description: "Your information successfully updated",
+        message: "Successfully Updated",
+        description: "Your settings were saved successfully.",
         duration: 3,
         placement: "topRight",
       });
+      form.setFieldValue("password", "");
+      setProfileImageFile(null);
     } catch (error) {
       api.error({
-        title: "Updation Failure",
+        message: "Update Failed",
         description: error.message,
         duration: 3,
         placement: "topRight",
@@ -64,10 +156,12 @@ function Settings() {
     if (!selectedFile) {
       return;
     }
-    // Use FileReader to preview image
+
+    setProfileImageFile(selectedFile);
+
     const reader = new FileReader();
     reader.onload = (e) => {
-      setProfileImage(e.target.result);
+      setProfileImagePreview(e.target.result);
     };
     reader.readAsDataURL(selectedFile);
   }
@@ -99,6 +193,7 @@ function Settings() {
             {contextHolder}
             <div className={styles.formSection}>
               <Form
+                form={form}
                 layout="vertical"
                 onFinish={onFinish}
                 className={styles.form}
@@ -169,13 +264,8 @@ function Settings() {
             <div className={styles.profileSection}>
               <div>
                 <h3 className={styles.profileTitle}>Profile Image</h3>
-                <Alert
-                  type="error"
-                  description="Image save and upload not work"
-                />
-                <img
-                  src={profileImage}
-                  alt="Profile"
+                <Avatar
+                  src={profileImagePreview}
                   className={styles.profileImage}
                 />
               </div>
