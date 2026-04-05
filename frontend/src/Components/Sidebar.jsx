@@ -38,18 +38,14 @@ function Sidebar() {
       icon: <ScheduleOutlined />,
       label: "Admin Manage Events",
     },
-    { key: "/manage-users", icon: <UserOutlined />, label: "Manage Users" },
-    {
-      key: "/manage-categories",
-      icon: <AppstoreOutlined />,
-      label: "Manage Categories",
-    },
+
+  
     {
       key: "/manage-bookings",
       icon: <CreditCardOutlined />,
       label: "Bookings & Payments",
     },
-    { key: "/categories", icon: <AppstoreOutlined />, label: "Categories" },
+  
     { key: "/bookings", icon: <CalendarOutlined />, label: "Bookings" },
     { key: "/payments", icon: <CreditCardOutlined />, label: "Payments" },
     { key: "/reports", icon: <BarChartOutlined />, label: "Reports" },

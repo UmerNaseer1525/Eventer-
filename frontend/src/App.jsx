@@ -8,9 +8,9 @@ import Analytics from "./Pages/Analytics/Analytics";
 import AdminDashboard from "./Pages/Dashboard/AdminDashboard";
 import AdminProfile from "./Pages/Users/AdminProfile";
 import ManageEvents from "./Pages/Events/ManageEvents";
-import ManageCategories from "./Pages/Categories/ManageCategories";
+
 import ManageBookings from "./Pages/Bookings/ManageBookings";
-import ManageUsers from "./Pages/Users/ManageUsers";
+
 import MyProfile from "./Pages/Users/MyProfile";
 import "./App.css";
 import MainLayout from "./Components/MainLayout";
@@ -21,7 +21,7 @@ import LandingPage from "./Pages/Landing/LandingPage";
 import Settings from "./Pages/Setting/Settings";
 import Events from "./Pages/Events/Events";
 import Users from "./Pages/Users/Users";
-import Categories from "./Pages/Categories/Categories";
+
 import Bookings from "./Pages/Bookings/Bookings";
 import Payments from "./Pages/Payments/Payments";
 import Reports from "./Pages/Reports/Reports";
@@ -139,14 +139,7 @@ const router = createBrowserRouter([
           </MainLayout>
         ),
       },
-      {
-        path: "/manage-categories",
-        element: (
-          <MainLayout>
-            <ManageCategories />
-          </MainLayout>
-        ),
-      },
+      
       {
         path: "/manage-bookings",
         element: (
@@ -155,14 +148,7 @@ const router = createBrowserRouter([
           </MainLayout>
         ),
       },
-      {
-        path: "/manage-users",
-        element: (
-          <MainLayout>
-            <ManageUsers />
-          </MainLayout>
-        ),
-      },
+ 
       {
         path: "/my-profile",
         element: (
@@ -171,14 +157,7 @@ const router = createBrowserRouter([
           </MainLayout>
         ),
       },
-      {
-        path: "/categories",
-        element: (
-          <MainLayout>
-            <Categories />
-          </MainLayout>
-        ),
-      },
+     
       {
         path: "/bookings",
         element: (
