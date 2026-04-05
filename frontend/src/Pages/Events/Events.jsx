@@ -18,6 +18,7 @@ import { addPayment } from "../../Services/paymentSlice";
 import { updateEvent } from "../../Services/eventSlice";
 import Event_Detail from "../../Components/Event_Detail";
 import EventBookingPaymentModal from "../../Components/EventBookingPaymentModal";
+import { isEventApproved } from "../../utils/eventApproval";
 
 function Events() {
   const [search, setSearch] = useState("");
@@ -150,7 +151,8 @@ function Events() {
           typeof event.status === "string" &&
           typeof event.location === "string" &&
           typeof event.category === "string" &&
-          event.bannerImage,
+          event.bannerImage &&
+          isEventApproved(event),
       )
     : [];
 

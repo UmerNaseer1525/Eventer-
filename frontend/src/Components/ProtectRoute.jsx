@@ -11,6 +11,7 @@ function ProtectRoute({ allowedRoles = [] }) {
   }
 
   const role = normalizeRole(user?.role);
+  const homePath = role === "admin" ? "/admin-dashboard" : "/dashboard";
   const blocked = role === "user" && isBlockedUser(user);
   if (blocked && location.pathname !== "/settings") {
     return <Navigate to="/settings" replace />;
@@ -24,7 +25,7 @@ function ProtectRoute({ allowedRoles = [] }) {
     normalizeRole(item),
   );
   if (!normalizedAllowedRoles.includes(role)) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={homePath} replace />;
   }
 
   return <Outlet />;

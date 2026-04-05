@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { removeRequest } from "../../Services/requestSlice";
 import { eventApproved, eventRejected } from "../../Services/eventSlice";
 import { useState } from "react";
+import { isEventPending } from "../../utils/eventApproval";
 
 function ManageEvents() {
   const [rejectionReason, setRejectonReason] = useState("");
@@ -13,14 +14,42 @@ function ManageEvents() {
   const dispatch = useDispatch();
   const requests = useSelector((state) => state.request);
   const events = useSelector((state) => state.event);
+
+  const pendingRequestEventIds = new Set(
+    requests
+      .filter(
+        (request) =>
+          request &&
+          (request.type === "eventApproval" || request.eventId !== undefined) &&
+          String(request.status || "pending").toLowerCase() === "pending" &&
+          request.eventId !== undefined,
+      )
+      .map((request) => String(request.eventId)),
+  );
+
   const eventRequests = requests.filter(
     (request) =>
       (request.type === "eventApproval" || request.eventId !== undefined) &&
       (request.status === undefined || request.status === "pending"),
   );
-  const matchedEvents = eventRequests
-    .map((req) => events.find((event) => event.id === req.eventId))
+
+  const matchedEventsFromRequests = eventRequests
+    .map((req) =>
+      events.find((event) => String(event.id) === String(req.eventId)),
+    )
     .filter((event) => event !== undefined);
+
+  const pendingEventsFallback = events.filter(
+    (event) =>
+      event &&
+      isEventPending(event) &&
+      !pendingRequestEventIds.has(String(event.id)),
+  );
+
+  const matchedEvents = [
+    ...matchedEventsFromRequests,
+    ...pendingEventsFallback,
+  ];
   function handleReject(eventId, rejection_reason) {
     if (!rejection_reason || !rejection_reason.trim()) {
       notification.error({
@@ -105,7 +134,7 @@ function ManageEvents() {
       title: "Actions",
       key: "actions",
       width: "28%",
-      render: (record) => {
+      render: (_, record) => {
         return (
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
             <Button

@@ -20,9 +20,14 @@ import InsightDonutChart from "../../Components/Insights/InsightDonutChart";
 import { INSIGHT_COLORS as C } from "../../Components/Insights/theme";
 import {
   buildTimelineData,
-  isPaidPayment,
   toNumber,
 } from "../../Components/Insights/insightUtils";
+import {
+  getApprovedEvents,
+  getPaidApprovedBookings,
+  getCompletedApprovedPayments,
+  getTotalRevenue,
+} from "../../utils/insightScope";
 
 function Analytics() {
   const events = useSelector((state) =>
@@ -35,57 +40,47 @@ function Analytics() {
     Array.isArray(state.payment) ? state.payment : [],
   );
 
+  const approvedEvents = useMemo(() => getApprovedEvents(events), [events]);
+
   const paidBookings = useMemo(
-    () =>
-      bookings.filter(
-        (item) => String(item?.paymentStatus ?? "").toLowerCase() === "paid",
-      ),
-    [bookings],
+    () => getPaidApprovedBookings(bookings, approvedEvents),
+    [bookings, approvedEvents],
   );
 
   const completedPayments = useMemo(
-    () => payments.filter((item) => isPaidPayment(item)),
-    [payments],
+    () => getCompletedApprovedPayments(payments, approvedEvents),
+    [payments, approvedEvents],
   );
 
   const chartData = useMemo(
     () =>
       buildTimelineData({
         period: "monthly",
-        events,
+        events: approvedEvents,
         bookings: paidBookings,
         payments: completedPayments,
       }),
-    [events, paidBookings, completedPayments],
+    [approvedEvents, paidBookings, completedPayments],
   );
 
-  const totalEvents = events.length;
+  const totalEvents = approvedEvents.length;
   const totalBookings = paidBookings.length;
 
-  const totalRevenue = useMemo(() => {
-    const paymentRevenue = completedPayments.reduce(
-      (sum, item) => sum + toNumber(item.amount),
-      0,
-    );
+  const totalRevenue = useMemo(
+    () => getTotalRevenue(completedPayments, paidBookings),
+    [completedPayments, paidBookings],
+  );
 
-    if (paymentRevenue > 0) return paymentRevenue;
-
-    return paidBookings.reduce(
-      (sum, item) => sum + toNumber(item.amount ?? item.price),
-      0,
-    );
-  }, [completedPayments, paidBookings]);
-
-  const upcomingEvents = events.filter(
+  const upcomingEvents = approvedEvents.filter(
     (item) => String(item?.status ?? "").toLowerCase() === "upcoming",
   ).length;
-  const ongoingEvents = events.filter(
+  const ongoingEvents = approvedEvents.filter(
     (item) => String(item?.status ?? "").toLowerCase() === "ongoing",
   ).length;
-  const completedEvents = events.filter(
+  const completedEvents = approvedEvents.filter(
     (item) => String(item?.status ?? "").toLowerCase() === "completed",
   ).length;
-  const cancelledEvents = events.filter(
+  const cancelledEvents = approvedEvents.filter(
     (item) => String(item?.status ?? "").toLowerCase() === "cancelled",
   ).length;
 
@@ -100,7 +95,7 @@ function Analytics() {
 
   const categorySegments = useMemo(() => {
     const countMap = new Map();
-    events.forEach((item) => {
+    approvedEvents.forEach((item) => {
       const key = item?.category || "Uncategorized";
       countMap.set(key, (countMap.get(key) || 0) + 1);
     });
@@ -115,7 +110,7 @@ function Analytics() {
       value,
       color: colors[index % colors.length],
     }));
-  }, [events]);
+  }, [approvedEvents]);
 
   const statusSegments = [
     { name: "Upcoming", value: upcomingEvents, color: C.blue },
@@ -144,7 +139,7 @@ function Analytics() {
       );
     });
 
-    return events
+    return approvedEvents
       .map((event) => {
         const idKey = String(event.id ?? "");
         const titleKey = String(event.title ?? event.name ?? "");
@@ -163,7 +158,7 @@ function Analytics() {
       })
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
-  }, [events, paidBookings, completedPayments]);
+  }, [approvedEvents, paidBookings, completedPayments]);
 
   const tableColumns = [
     {

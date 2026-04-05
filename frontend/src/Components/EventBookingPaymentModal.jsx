@@ -13,6 +13,7 @@ import {
 } from "antd";
 import { useEffect } from "react";
 
+// Final version will replace these demo methods with Stripe-powered checkout.
 const PAYMENT_METHODS = ["Credit Card", "Bank Transfer", "Wallet"];
 
 function EventBookingPaymentModal({

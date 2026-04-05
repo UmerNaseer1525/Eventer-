@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { normalizeApprovalStatus } from "../utils/eventApproval";
 
 const eventSlice = createSlice({
   name: "event",
@@ -10,6 +11,7 @@ const eventSlice = createSlice({
       title: "Tech Conference 2026",
       category: "Conference",
       status: "Upcoming",
+      approvedStatus: "Pending",
       location: "Expo Center, City A",
       capacity: 200,
       ticketPrice: 500,
@@ -22,6 +24,7 @@ const eventSlice = createSlice({
       title: "Music Fest",
       category: "Concert",
       status: "Cancelled",
+      approvedStatus: "Accepted",
       location: "Open Grounds, City B",
       capacity: 350,
       ticketPrice: 800,
@@ -34,6 +37,7 @@ const eventSlice = createSlice({
       title: "Startup Meetup",
       category: "Meetup",
       status: "Completed",
+      approvedStatus: "Pending",
       location: "Tech Park, City C",
       capacity: 120,
       ticketPrice: 0,
@@ -46,6 +50,7 @@ const eventSlice = createSlice({
       title: "Tech Conference",
       category: "Conference",
       status: "Upcoming",
+      approvedStatus: "Accepted",
       location: "Expo Center, City A",
       capacity: 250,
       ticketPrice: 600,
@@ -58,6 +63,7 @@ const eventSlice = createSlice({
       title: "Music Festival",
       category: "Concert",
       status: "Ongoing",
+      approvedStatus: "Accepted",
       location: "Open Grounds, City B",
       capacity: 400,
       ticketPrice: 1000,
@@ -70,6 +76,7 @@ const eventSlice = createSlice({
       title: "Startup Meetup",
       category: "Meetup",
       status: "Completed",
+      approvedStatus: "Accepted",
       location: "Tech Park, City C",
       capacity: 80,
       ticketPrice: 0,
@@ -78,7 +85,12 @@ const eventSlice = createSlice({
   ],
   reducers: {
     addEvent: (state, action) => {
-      state.push(action.payload);
+      const approvalStatus = normalizeApprovalStatus(action.payload);
+      state.push({
+        ...action.payload,
+        approvedStatus: approvalStatus,
+        isApproved: approvalStatus === "Accepted",
+      });
     },
 
     deleteEvent: (state, action) => {
@@ -86,9 +98,21 @@ const eventSlice = createSlice({
     },
 
     updateEvent: (state, action) => {
-      return state.map((event) =>
-        event.id === action.payload.id ? action.payload : event,
-      );
+      return state.map((event) => {
+        if (event.id !== action.payload.id) return event;
+
+        const merged = {
+          ...event,
+          ...action.payload,
+        };
+        const approvalStatus = normalizeApprovalStatus(merged);
+
+        return {
+          ...merged,
+          approvedStatus: approvalStatus,
+          isApproved: approvalStatus === "Accepted",
+        };
+      });
     },
 
     updateStatus: (state, action) => {
@@ -110,6 +134,8 @@ const eventSlice = createSlice({
           return {
             ...event,
             approvedStatus: "Pending",
+            isApproved: false,
+            reason: null,
           };
         } else {
           return event;
@@ -123,6 +149,7 @@ const eventSlice = createSlice({
           return {
             ...event,
             approvedStatus: "Rejected",
+            isApproved: false,
             reason: action.payload.reason,
           };
         } else {
@@ -136,6 +163,8 @@ const eventSlice = createSlice({
           return {
             ...event,
             approvedStatus: "Accepted",
+            isApproved: true,
+            reason: null,
           };
         } else {
           return event;

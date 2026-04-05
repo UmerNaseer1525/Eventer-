@@ -5,9 +5,23 @@ const requestSlice = createSlice({
   initialState: [],
   reducers: {
     addRequest: (state, action) => {
+      const requestType = action.payload?.type || "eventApproval";
+      const eventId = action.payload?.eventId;
+
+      if (requestType === "eventApproval" && eventId !== undefined) {
+        const hasPending = state.some(
+          (request) =>
+            request.type === "eventApproval" &&
+            String(request.eventId) === String(eventId) &&
+            String(request.status || "pending").toLowerCase() === "pending",
+        );
+
+        if (hasPending) return;
+      }
+
       state.push({
         id: action.payload.id || `REQ-${Date.now()}`,
-        type: action.payload.type || "eventApproval",
+        type: requestType,
         status: action.payload.status || "pending",
         createdAt: action.payload.createdAt || new Date().toISOString(),
         ...action.payload,
@@ -47,7 +61,9 @@ const requestSlice = createSlice({
     },
 
     removeRequest: (state, action) => {
-      return state.filter((req) => req.eventId !== action.payload);
+      return state.filter(
+        (req) => String(req.eventId) !== String(action.payload),
+      );
     },
 
     removeRequestById: (state, action) => {

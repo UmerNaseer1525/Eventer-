@@ -34,6 +34,13 @@ import {
 } from "antd";
 import { useSelector } from "react-redux";
 import { useMemo } from "react";
+import { buildTimelineData } from "../../Components/Insights/insightUtils";
+import {
+  getApprovedEvents,
+  getPaidApprovedBookings,
+  getCompletedApprovedPayments,
+  getTotalRevenue,
+} from "../../utils/insightScope";
 const { Text } = Typography;
 
 // ── Color Palette ──────────────────────────────────────────────────────────────
@@ -62,87 +69,6 @@ const MONTHLY = [
   { month: "Oct", revenue: 11200, bookings: 98, events: 15, users: 254 },
   { month: "Nov", revenue: 10100, bookings: 91, events: 14, users: 241 },
   { month: "Dec", revenue: 13500, bookings: 120, events: 18, users: 310 },
-];
-
-const SAMPLE_USERS = [
-  {
-    name: "Alice Johnson",
-    email: "alice@email.com",
-    role: "Admin",
-    status: "Active",
-    bookings: 14,
-    joined: "Jan 2025",
-  },
-  {
-    name: "Bob Smith",
-    email: "bob@email.com",
-    role: "User",
-    status: "Active",
-    bookings: 9,
-    joined: "Feb 2025",
-  },
-  {
-    name: "Carol White",
-    email: "carol@email.com",
-    role: "User",
-    status: "Inactive",
-    bookings: 3,
-    joined: "Mar 2025",
-  },
-  {
-    name: "David Brown",
-    email: "david@email.com",
-    role: "User",
-    status: "Active",
-    bookings: 21,
-    joined: "Jan 2025",
-  },
-  {
-    name: "Eva Martinez",
-    email: "eva@email.com",
-    role: "Moderator",
-    status: "Active",
-    bookings: 7,
-    joined: "Apr 2025",
-  },
-];
-
-const SAMPLE_EVENTS = [
-  {
-    name: "Tech Conference 2026",
-    bookings: 142,
-    revenue: 7100,
-    category: "Conference",
-    status: "Upcoming",
-  },
-  {
-    name: "Music Festival",
-    bookings: 310,
-    revenue: 15500,
-    category: "Concert",
-    status: "Ongoing",
-  },
-  {
-    name: "Art & Design Expo",
-    bookings: 89,
-    revenue: 2670,
-    category: "Exhibition",
-    status: "Completed",
-  },
-  {
-    name: "Startup Summit",
-    bookings: 201,
-    revenue: 10050,
-    category: "Conference",
-    status: "Upcoming",
-  },
-  {
-    name: "Jazz Night",
-    bookings: 75,
-    revenue: 3675,
-    category: "Concert",
-    status: "Upcoming",
-  },
 ];
 
 // ── Reusable: Stat Card ────────────────────────────────────────────────────────
@@ -251,7 +177,7 @@ function SectionHeader({ icon, title, subtitle }) {
 
 // ── Reusable: Bar Chart ────────────────────────────────────────────────────────
 function BarChartAnt({ data, dataKey, color }) {
-  const max = Math.max(...data.map((d) => d[dataKey]));
+  const max = Math.max(1, ...data.map((d) => Number(d[dataKey]) || 0));
   return (
     <div
       style={{
@@ -381,13 +307,15 @@ function LineChartAnt({ data, dataKey, color }) {
 // ── Reusable: Donut Chart ──────────────────────────────────────────────────────
 function DonutChart({ segments }) {
   const total = segments.reduce((s, seg) => s + seg.value, 0);
-  let current = 0;
-  const parts = segments.map((seg) => {
-    const pct = (seg.value / total) * 100;
-    const start = current;
-    current += pct;
-    return `${seg.color} ${start.toFixed(1)}% ${current.toFixed(1)}%`;
-  });
+  const safeTotal = total > 0 ? total : 1;
+  const parts = [];
+
+  segments.reduce((start, seg) => {
+    const pct = (seg.value / safeTotal) * 100;
+    const end = start + pct;
+    parts.push(`${seg.color} ${start.toFixed(1)}% ${end.toFixed(1)}%`);
+    return end;
+  }, 0);
 
   return (
     <div
@@ -457,7 +385,7 @@ function DonutChart({ segments }) {
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontWeight: 700, fontSize: 13 }}>{seg.value}</span>
               <span style={{ fontSize: 11, color: "#aaa" }}>
-                {((seg.value / total) * 100).toFixed(0)}%
+                {((seg.value / safeTotal) * 100).toFixed(0)}%
               </span>
             </div>
           </div>
@@ -511,36 +439,78 @@ function SystemAlert({ icon, message, type }) {
 function AdminDashboard() {
   const allEvents = useSelector((state) => state.event);
   const allBookings = useSelector((state) => state.booking);
+  const allPayments = useSelector((state) => state.payment);
   const allUsers = useSelector((state) => state.user);
 
-  const events = Array.isArray(allEvents) ? allEvents : [];
-  const bookings = Array.isArray(allBookings) ? allBookings : [];
-  const users = Array.isArray(allUsers) ? allUsers : [];
+  const events = useMemo(() => getApprovedEvents(allEvents), [allEvents]);
+  const bookings = useMemo(
+    () => getPaidApprovedBookings(allBookings, events),
+    [allBookings, events],
+  );
+  const completedPayments = useMemo(
+    () => getCompletedApprovedPayments(allPayments, events),
+    [allPayments, events],
+  );
+  const users = useMemo(
+    () => (Array.isArray(allUsers) ? allUsers : []),
+    [allUsers],
+  );
 
   // ── Derived KPIs
-  const totalEvents = events.length || 125;
-  const totalBookings = bookings.length || 1893;
-  const totalUsers = users.length || 3240;
-  const totalRevenue =
-    events.reduce((s, e) => s + (e.revenue || 0), 0) || 45320;
+  const totalEvents = events.length;
+  const totalBookings = bookings.length;
+  const totalUsers = users.length;
+  const totalRevenue = getTotalRevenue(completedPayments, bookings);
 
-  const upcomingCount =
-    events.filter((e) => e.status?.toLowerCase() === "upcoming").length || 58;
-  const ongoingCount =
-    events.filter((e) => e.status?.toLowerCase() === "ongoing").length || 14;
-  const completedCount =
-    events.filter((e) => e.status?.toLowerCase() === "completed").length || 43;
-  const cancelledCount =
-    events.filter((e) => e.status?.toLowerCase() === "cancelled").length || 10;
+  const upcomingCount = events.filter(
+    (e) => e.status?.toLowerCase() === "upcoming",
+  ).length;
+  const ongoingCount = events.filter(
+    (e) => e.status?.toLowerCase() === "ongoing",
+  ).length;
+  const completedCount = events.filter(
+    (e) => e.status?.toLowerCase() === "completed",
+  ).length;
+  const cancelledCount = events.filter(
+    (e) => e.status?.toLowerCase() === "cancelled",
+  ).length;
 
-  const activeUsers =
-    users.filter((u) => u.status?.toLowerCase() === "active").length || 2810;
-  const inactiveUsers =
-    users.filter((u) => u.status?.toLowerCase() === "inactive").length || 430;
-  const adminUsers =
-    users.filter((u) => u.role?.toLowerCase() === "admin").length || 12;
+  const activeUsers = users.filter(
+    (u) => u.status?.toLowerCase() === "active",
+  ).length;
+  const inactiveUsers = users.filter(
+    (u) => u.status?.toLowerCase() === "inactive",
+  ).length;
+  const adminUsers = users.filter(
+    (u) => u.role?.toLowerCase() === "admin",
+  ).length;
 
-  const chartData = MONTHLY;
+  const chartData = useMemo(() => {
+    const baseRows = buildTimelineData({
+      period: "monthly",
+      events,
+      bookings,
+      payments: completedPayments,
+    }).map((row) => ({ ...row, users: 0 }));
+
+    const currentYear = new Date().getFullYear();
+    users.forEach((user) => {
+      const rawDate = user?.joined ?? user?.createdAt ?? user?.date;
+      if (!rawDate) return;
+
+      const parsed = new Date(rawDate);
+      if (Number.isNaN(parsed.getTime())) return;
+      if (parsed.getFullYear() !== currentYear) return;
+      baseRows[parsed.getMonth()].users += 1;
+    });
+
+    return baseRows;
+  }, [events, bookings, completedPayments, users]);
+
+  const maxMonthlyEvents = Math.max(
+    1,
+    ...chartData.map((item) => Number(item.events) || 0),
+  );
 
   // ── Category donut
   const categorySegments = useMemo(() => {
@@ -574,11 +544,7 @@ function AdminDashboard() {
   // ── User role donut
   const userRoleSegments = useMemo(() => {
     if (users.length === 0) {
-      return [
-        { name: "Users", value: 3200, color: C.blue },
-        { name: "Admins", value: 12, color: C.purple },
-        { name: "Moderators", value: 28, color: C.orange },
-      ];
+      return [{ name: "Users", value: 0, color: C.blue }];
     }
     const map = {};
     users.forEach((u) => {
@@ -593,29 +559,75 @@ function AdminDashboard() {
   }, [users]);
 
   // ── Top events table data
-  const tableData =
-    events.length > 0
-      ? events.slice(0, 5).map((e) => ({
-          name: e.title || e.name || "—",
-          bookings: e.attendees || e.number_of_guests || 50,
-          revenue: e.revenue || 0,
-          category: e.category || "—",
-          status: e.status || "—",
-        }))
-      : SAMPLE_EVENTS;
+  const tableData = useMemo(() => {
+    const bookingByEvent = new Map();
+    bookings.forEach((item) => {
+      const eventId = String(item?.eventId ?? "");
+      const eventTitle = String(item?.title ?? item?.name ?? "").toLowerCase();
+
+      if (eventId) {
+        bookingByEvent.set(eventId, (bookingByEvent.get(eventId) || 0) + 1);
+      }
+      if (eventTitle) {
+        bookingByEvent.set(
+          eventTitle,
+          (bookingByEvent.get(eventTitle) || 0) + 1,
+        );
+      }
+    });
+
+    const revenueByEvent = new Map();
+    completedPayments.forEach((item) => {
+      const eventId = String(item?.eventId ?? "");
+      const eventTitle = String(item?.eventName ?? "").toLowerCase();
+      const amount = Number(item?.amount) || 0;
+
+      if (eventId) {
+        revenueByEvent.set(
+          eventId,
+          (revenueByEvent.get(eventId) || 0) + amount,
+        );
+      }
+      if (eventTitle) {
+        revenueByEvent.set(
+          eventTitle,
+          (revenueByEvent.get(eventTitle) || 0) + amount,
+        );
+      }
+    });
+
+    return events
+      .map((event) => {
+        const idKey = String(event?.id ?? "");
+        const titleKey = String(
+          event?.title ?? event?.name ?? "",
+        ).toLowerCase();
+
+        return {
+          name: event.title || event.name || "—",
+          category: event.category || "—",
+          status: event.status || "—",
+          bookings:
+            (bookingByEvent.get(idKey) || 0) +
+            (bookingByEvent.get(titleKey) || 0),
+          revenue:
+            (revenueByEvent.get(idKey) || 0) +
+            (revenueByEvent.get(titleKey) || 0),
+        };
+      })
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+  }, [events, bookings, completedPayments]);
 
   // ── Recent users table data
-  const usersTableData =
-    users.length > 0
-      ? users.slice(0, 5).map((u) => ({
-          name: u.name || u.username || "—",
-          email: u.email || "—",
-          role: u.role || "User",
-          status: u.status || "Active",
-          bookings: u.bookings || 0,
-          joined: u.joined || "—",
-        }))
-      : SAMPLE_USERS;
+  const usersTableData = users.slice(0, 5).map((u) => ({
+    name: u.name || u.username || "—",
+    email: u.email || "—",
+    role: u.role || "User",
+    status: u.status || "Active",
+    bookings: u.bookings || 0,
+    joined: u.joined || "—",
+  }));
 
   // ── Table columns: Top Events
   const eventColumns = [
@@ -1128,8 +1140,7 @@ function AdminDashboard() {
                   </span>
                   <Progress
                     percent={Math.round(
-                      (d.events / Math.max(...chartData.map((x) => x.events))) *
-                        100,
+                      ((Number(d.events) || 0) / maxMonthlyEvents) * 100,
                     )}
                     showInfo={false}
                     strokeColor={C.orange}

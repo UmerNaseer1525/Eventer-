@@ -26,6 +26,7 @@ import EditEvent from "../../Components/EditEvent";
 import { deleteEvent, updateStatus } from "../../Services/eventSlice";
 import Event_Detail from "../../Components/Event_Detail";
 import EventApprovalQueue from "../../Components/EventApprovalQueue";
+import { isEventApproved } from "../../utils/eventApproval";
 
 function MyEvents() {
   const [search, setSearch] = useState("");
@@ -35,7 +36,6 @@ function MyEvents() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectEditEvent, setSelectEditEvent] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -63,7 +63,8 @@ function MyEvents() {
             typeof event.status === "string" &&
             typeof event.location === "string" &&
             typeof event.category === "string" &&
-            event.bannerImage,
+            event.bannerImage &&
+            isEventApproved(event),
         )
         .filter((event) => {
           const matchesTitle = event.title
@@ -133,19 +134,6 @@ function MyEvents() {
           </Col>
         ) : (
           filteredEvents.map((event) => {
-            let bookingDisabled = false;
-            let bookingLabel = "Bookings";
-            const statusLower = event.status.toLowerCase();
-            if (statusLower === "completed" || statusLower === "cancelled") {
-              bookingDisabled = true;
-              bookingLabel = "Not Available";
-            } else if (statusLower === "ongoing") {
-              bookingDisabled = true;
-              bookingLabel = "Contact Management";
-            } else if (event.capacity <= 0) {
-              bookingDisabled = true;
-              bookingLabel = "Book Full";
-            }
             return (
               <Col
                 key={event.id}

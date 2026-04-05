@@ -41,7 +41,7 @@ const router = createBrowserRouter([
     element: <Signup />,
   },
   {
-    element: <ProtectRoute />,
+    element: <ProtectRoute allowedRoles={["user"]} />,
     children: [
       {
         path: "/dashboard",
@@ -91,7 +91,19 @@ const router = createBrowserRouter([
           </MainLayout>
         ),
       },
-
+      {
+        path: "/manage-bookings",
+        element: (
+          <MainLayout>
+            <ManageBookings />
+          </MainLayout>
+        ),
+      },
+    ],
+  },
+  {
+    element: <ProtectRoute />,
+    children: [
       {
         path: "/settings",
         element: (
@@ -105,19 +117,6 @@ const router = createBrowserRouter([
         element: (
           <MainLayout>
             <Notifications />
-          </MainLayout>
-        ),
-      },
-    ],
-  },
-  {
-    element: <ProtectRoute allowedRoles={["user"]} />,
-    children: [
-      {
-        path: "/manage-bookings",
-        element: (
-          <MainLayout>
-            <ManageBookings />
           </MainLayout>
         ),
       },
