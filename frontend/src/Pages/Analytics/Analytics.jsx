@@ -3,256 +3,195 @@ import {
   TeamOutlined,
   DollarOutlined,
   RiseOutlined,
-  FallOutlined,
-  FireOutlined,
   TrophyOutlined,
   BarChartOutlined,
   PieChartOutlined,
   LineChartOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
+  FireOutlined,
 } from "@ant-design/icons";
-import {
-  Card,
-  Row,
-  Col,
-  Select,
-  Tag,
-  Table,
-  Progress,
-  Badge,
-  Divider,
-  Statistic,
-} from "antd";
+import { Card, Row, Col, Tag, Table, Progress, Empty } from "antd";
 import { useSelector } from "react-redux";
+import { useMemo } from "react";
+import InsightStatCard from "../../Components/Insights/InsightStatCard";
+import InsightSectionHeader from "../../Components/Insights/InsightSectionHeader";
+import InsightBarChart from "../../Components/Insights/InsightBarChart";
+import InsightLineChart from "../../Components/Insights/InsightLineChart";
+import InsightDonutChart from "../../Components/Insights/InsightDonutChart";
+import { INSIGHT_COLORS as C } from "../../Components/Insights/theme";
 import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
-import { useState, useMemo } from "react";
+  buildTimelineData,
+  isPaidPayment,
+  toNumber,
+} from "../../Components/Insights/insightUtils";
 
-const { Option } = Select;
-
-// ─── Color Palette ─────────────────────────────────────────────────────────────
-const COLORS = {
-  blue: "#1677ff",
-  green: "#52c41a",
-  orange: "#fa8c16",
-  red: "#f5222d",
-  purple: "#722ed1",
-  cyan: "#13c2c2",
-  gold: "#faad14",
-  pink: "#eb2f96",
-};
-
-const PIE_COLORS = [
-  COLORS.blue,
-  COLORS.purple,
-  COLORS.green,
-  COLORS.orange,
-  COLORS.cyan,
-  COLORS.pink,
-];
-
-// ─── Static / Fallback Chart Data ─────────────────────────────────────────────
-const monthlyRevenueData = [
-  { month: "Jan", revenue: 4200, bookings: 38, events: 5 },
-  { month: "Feb", revenue: 5800, bookings: 52, events: 7 },
-  { month: "Mar", revenue: 4900, bookings: 44, events: 6 },
-  { month: "Apr", revenue: 7200, bookings: 63, events: 9 },
-  { month: "May", revenue: 6100, bookings: 55, events: 8 },
-  { month: "Jun", revenue: 8900, bookings: 78, events: 11 },
-  { month: "Jul", revenue: 7500, bookings: 67, events: 10 },
-  { month: "Aug", revenue: 9800, bookings: 89, events: 13 },
-  { month: "Sep", revenue: 8300, bookings: 74, events: 11 },
-  { month: "Oct", revenue: 11200, bookings: 98, events: 15 },
-  { month: "Nov", revenue: 10100, bookings: 91, events: 14 },
-  { month: "Dec", revenue: 13500, bookings: 120, events: 18 },
-];
-
-const weeklyData = [
-  { day: "Mon", revenue: 1200, bookings: 11 },
-  { day: "Tue", revenue: 1900, bookings: 17 },
-  { day: "Wed", revenue: 1500, bookings: 13 },
-  { day: "Thu", revenue: 2200, bookings: 20 },
-  { day: "Fri", revenue: 3100, bookings: 28 },
-  { day: "Sat", revenue: 4200, bookings: 38 },
-  { day: "Sun", revenue: 2800, bookings: 25 },
-];
-
-const topEventsData = [
-  { name: "Tech Conference 2026", bookings: 142, revenue: 7100, category: "Conference", status: "Upcoming" },
-  { name: "Music Festival",       bookings: 310, revenue: 15500, category: "Concert",    status: "Ongoing"  },
-  { name: "Art & Design Expo",    bookings: 89,  revenue: 2670,  category: "Exhibition", status: "Completed"},
-  { name: "Startup Summit",       bookings: 201, revenue: 10050, category: "Conference", status: "Upcoming" },
-  { name: "Jazz Night",           bookings: 75,  revenue: 3675,  category: "Concert",    status: "Upcoming" },
-];
-
-// ─── Custom Tooltip ────────────────────────────────────────────────────────────
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div
-        style={{
-          background: "#fff",
-          border: "1px solid #f0f0f0",
-          borderRadius: 10,
-          padding: "10px 16px",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-          fontSize: 13,
-        }}
-      >
-        <p style={{ fontWeight: 700, marginBottom: 6, color: "#333" }}>{label}</p>
-        {payload.map((p) => (
-          <p key={p.name} style={{ color: p.color, margin: "2px 0" }}>
-            {p.name}: <strong>{p.name === "revenue" ? `$${p.value.toLocaleString()}` : p.value}</strong>
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
-
-// ─── Stat Card ─────────────────────────────────────────────────────────────────
-function StatCard({ title, value, prefix, suffix, icon, color, change, changeLabel }) {
-  const isPositive = change >= 0;
-  return (
-    <Card
-      style={{
-        borderRadius: 14,
-        boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
-        borderTop: `4px solid ${color}`,
-        height: "100%",
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <div style={{ fontSize: 13, color: "#888", marginBottom: 6, fontWeight: 500 }}>{title}</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: "#1a1a2e", lineHeight: 1.1 }}>
-            {prefix}{typeof value === "number" ? value.toLocaleString() : value}{suffix}
-          </div>
-          {change !== undefined && (
-            <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
-              {isPositive
-                ? <ArrowUpOutlined style={{ color: COLORS.green, fontSize: 12 }} />
-                : <ArrowDownOutlined style={{ color: COLORS.red, fontSize: 12 }} />
-              }
-              <span style={{ fontSize: 12, color: isPositive ? COLORS.green : COLORS.red, fontWeight: 600 }}>
-                {Math.abs(change)}%
-              </span>
-              <span style={{ fontSize: 12, color: "#aaa" }}>{changeLabel || "vs last month"}</span>
-            </div>
-          )}
-        </div>
-        <div style={{
-          width: 50, height: 50, borderRadius: 12,
-          background: color + "18",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 22, color,
-        }}>
-          {icon}
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-// ─── Section Header ────────────────────────────────────────────────────────────
-function SectionHeader({ icon, title, subtitle }) {
-  return (
-    <div style={{ marginBottom: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 18, color: COLORS.blue }}>{icon}</span>
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#1a1a2e" }}>{title}</span>
-      </div>
-      {subtitle && <div style={{ fontSize: 12, color: "#aaa", marginTop: 2, marginLeft: 26 }}>{subtitle}</div>}
-    </div>
-  );
-}
-
-// ─── Main Analytics Page ───────────────────────────────────────────────────────
 function Analytics() {
-  const [period, setPeriod] = useState("monthly");
+  const events = useSelector((state) =>
+    Array.isArray(state.event) ? state.event : [],
+  );
+  const bookings = useSelector((state) =>
+    Array.isArray(state.booking) ? state.booking : [],
+  );
+  const payments = useSelector((state) =>
+    Array.isArray(state.payment) ? state.payment : [],
+  );
 
-  // Pull from Redux
-  const allEvents   = useSelector((state) => state.event);
-  const allBookings = useSelector((state) => state.booking);
+  const paidBookings = useMemo(
+    () =>
+      bookings.filter(
+        (item) => String(item?.paymentStatus ?? "").toLowerCase() === "paid",
+      ),
+    [bookings],
+  );
 
-  // ── Derive stats from Redux data
-  const events   = Array.isArray(allEvents)   ? allEvents   : [];
-  const bookings = Array.isArray(allBookings) ? allBookings : [];
+  const completedPayments = useMemo(
+    () => payments.filter((item) => isPaidPayment(item)),
+    [payments],
+  );
 
-  const totalEvents    = events.length;
-  const totalBookings  = bookings.length;
-  const totalRevenue   = events.reduce((s, e) => s + (e.revenue || 0), 0) || 45320;
-  const upcomingEvents = events.filter((e) => e.status?.toLowerCase() === "upcoming").length;
-  const ongoingEvents  = events.filter((e) => e.status?.toLowerCase() === "ongoing").length;
-  const completedEvents= events.filter((e) => e.status?.toLowerCase() === "completed").length;
-  const cancelledEvents= events.filter((e) => e.status?.toLowerCase() === "cancelled").length;
+  const chartData = useMemo(
+    () =>
+      buildTimelineData({
+        period: "monthly",
+        events,
+        bookings: paidBookings,
+        payments: completedPayments,
+      }),
+    [events, paidBookings, completedPayments],
+  );
 
-  // ── Category breakdown for Pie chart
-  const categoryMap = useMemo(() => {
-    const map = {};
-    events.forEach((e) => {
-      if (e.category) map[e.category] = (map[e.category] || 0) + 1;
+  const totalEvents = events.length;
+  const totalBookings = paidBookings.length;
+
+  const totalRevenue = useMemo(() => {
+    const paymentRevenue = completedPayments.reduce(
+      (sum, item) => sum + toNumber(item.amount),
+      0,
+    );
+
+    if (paymentRevenue > 0) return paymentRevenue;
+
+    return paidBookings.reduce(
+      (sum, item) => sum + toNumber(item.amount ?? item.price),
+      0,
+    );
+  }, [completedPayments, paidBookings]);
+
+  const upcomingEvents = events.filter(
+    (item) => String(item?.status ?? "").toLowerCase() === "upcoming",
+  ).length;
+  const ongoingEvents = events.filter(
+    (item) => String(item?.status ?? "").toLowerCase() === "ongoing",
+  ).length;
+  const completedEvents = events.filter(
+    (item) => String(item?.status ?? "").toLowerCase() === "completed",
+  ).length;
+  const cancelledEvents = events.filter(
+    (item) => String(item?.status ?? "").toLowerCase() === "cancelled",
+  ).length;
+
+  const growthRate = useMemo(() => {
+    if (chartData.length < 2) return 0;
+    const current = chartData[chartData.length - 1].revenue;
+    const previous = chartData[chartData.length - 2].revenue;
+    if (previous <= 0 && current <= 0) return 0;
+    if (previous <= 0) return 100;
+    return Math.round(((current - previous) / previous) * 100);
+  }, [chartData]);
+
+  const categorySegments = useMemo(() => {
+    const countMap = new Map();
+    events.forEach((item) => {
+      const key = item?.category || "Uncategorized";
+      countMap.set(key, (countMap.get(key) || 0) + 1);
     });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
+
+    const colors = Object.values(C);
+    if (countMap.size === 0) {
+      return [{ name: "No Data", value: 1, color: C.blue }];
+    }
+
+    return Array.from(countMap.entries()).map(([name, value], index) => ({
+      name,
+      value,
+      color: colors[index % colors.length],
+    }));
   }, [events]);
 
-  const pieData = categoryMap.length > 0
-    ? categoryMap
-    : [
-        { name: "Conference", value: 40 },
-        { name: "Concert",    value: 30 },
-        { name: "Exhibition", value: 15 },
-        { name: "Workshop",   value: 10 },
-        { name: "Other",      value: 5  },
-      ];
-
-  // ── Status breakdown for bar chart
-  const statusData = [
-    { status: "Upcoming",  count: upcomingEvents  || 58 },
-    { status: "Ongoing",   count: ongoingEvents   || 14 },
-    { status: "Completed", count: completedEvents || 43 },
-    { status: "Cancelled", count: cancelledEvents || 10 },
+  const statusSegments = [
+    { name: "Upcoming", value: upcomingEvents, color: C.blue },
+    { name: "Ongoing", value: ongoingEvents, color: C.green },
+    { name: "Completed", value: completedEvents, color: C.cyan },
+    { name: "Cancelled", value: cancelledEvents, color: C.red },
   ];
 
-  const chartData = period === "weekly" ? weeklyData : monthlyRevenueData;
+  const topEvents = useMemo(() => {
+    const bookingByEvent = new Map();
+    paidBookings.forEach((item) => {
+      const key = String(
+        item.eventId ?? item.id ?? item.title ?? item.name ?? "",
+      );
+      if (!key) return;
+      bookingByEvent.set(key, (bookingByEvent.get(key) || 0) + 1);
+    });
 
-  // ── Top Events Table columns
-  const columns = [
+    const revenueByEvent = new Map();
+    completedPayments.forEach((item) => {
+      const key = String(item.eventId ?? item.eventName ?? "");
+      if (!key) return;
+      revenueByEvent.set(
+        key,
+        (revenueByEvent.get(key) || 0) + toNumber(item.amount),
+      );
+    });
+
+    return events
+      .map((event) => {
+        const idKey = String(event.id ?? "");
+        const titleKey = String(event.title ?? event.name ?? "");
+
+        return {
+          name: event.title || event.name || "Untitled Event",
+          category: event.category || "Uncategorized",
+          status: event.status || "Unknown",
+          bookings:
+            (bookingByEvent.get(idKey) || 0) +
+            (bookingByEvent.get(titleKey) || 0),
+          revenue:
+            (revenueByEvent.get(idKey) || 0) +
+            (revenueByEvent.get(titleKey) || 0),
+        };
+      })
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+  }, [events, paidBookings, completedPayments]);
+
+  const tableColumns = [
     {
       title: "#",
       key: "rank",
-      width: 40,
-      render: (_, __, i) => (
-        <span style={{ fontWeight: 700, color: i < 3 ? COLORS.gold : "#aaa" }}>
-          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+      width: 44,
+      render: (_, __, index) => (
+        <span style={{ fontWeight: 700, color: index < 3 ? C.gold : "#aaa" }}>
+          {index === 0
+            ? "🥇"
+            : index === 1
+              ? "🥈"
+              : index === 2
+                ? "🥉"
+                : index + 1}
         </span>
       ),
     },
     {
-      title: "Event Name",
+      title: "Event",
       dataIndex: "name",
       key: "name",
-      render: (name, record) => (
+      render: (value, row) => (
         <div>
-          <div style={{ fontWeight: 600, fontSize: 14 }}>{name}</div>
-          <Tag color="purple" style={{ fontSize: 11, marginTop: 2 }}>{record.category}</Tag>
+          <div style={{ fontWeight: 600, fontSize: 14 }}>{value}</div>
+          <Tag color="purple" style={{ fontSize: 11, marginTop: 2 }}>
+            {row.category}
+          </Tag>
         </div>
       ),
     },
@@ -260,9 +199,19 @@ function Analytics() {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (s) => (
-        <Tag color={s === "Upcoming" ? "blue" : s === "Ongoing" ? "green" : s === "Cancelled" ? "red" : "default"}>
-          {s}
+      render: (value) => (
+        <Tag
+          color={
+            value === "Upcoming"
+              ? "blue"
+              : value === "Ongoing"
+                ? "green"
+                : value === "Cancelled"
+                  ? "red"
+                  : "default"
+          }
+        >
+          {value}
         </Tag>
       ),
     },
@@ -271,26 +220,32 @@ function Analytics() {
       dataIndex: "bookings",
       key: "bookings",
       sorter: (a, b) => a.bookings - b.bookings,
-      render: (v) => <span style={{ fontWeight: 700, color: COLORS.blue }}>{v}</span>,
+      render: (value) => (
+        <span style={{ fontWeight: 700, color: C.blue }}>{value}</span>
+      ),
     },
     {
       title: "Revenue",
       dataIndex: "revenue",
       key: "revenue",
       sorter: (a, b) => a.revenue - b.revenue,
-      render: (v) => <span style={{ fontWeight: 700, color: COLORS.green }}>${v.toLocaleString()}</span>,
+      render: (value) => (
+        <span style={{ fontWeight: 700, color: C.green }}>
+          ${value.toLocaleString()}
+        </span>
+      ),
     },
     {
       title: "Fill Rate",
       key: "fill",
-      render: (_, record) => {
-        const pct = Math.min(100, Math.round((record.bookings / 350) * 100));
+      render: (_, row) => {
+        const pct = Math.min(100, Math.round((row.bookings / 350) * 100));
         return (
-          <div style={{ minWidth: 100 }}>
+          <div style={{ minWidth: 110 }}>
             <Progress
               percent={pct}
               size="small"
-              strokeColor={pct > 70 ? COLORS.green : pct > 40 ? COLORS.gold : COLORS.orange}
+              strokeColor={pct > 70 ? C.green : pct > 40 ? C.gold : C.orange}
               showInfo={false}
             />
             <span style={{ fontSize: 11, color: "#888" }}>{pct}% full</span>
@@ -300,296 +255,355 @@ function Analytics() {
     },
   ];
 
-  // ── Use real events if available, otherwise fallback
-  const tableData = events.length > 0
-    ? events.slice(0, 5).map((e) => ({
-        name: e.name,
-        bookings: e.attendees || Math.floor(Math.random() * 200 + 50),
-        revenue: e.revenue || 0,
-        category: e.category || "—",
-        status: e.status || "—",
-      }))
-    : topEventsData;
-
   return (
     <div style={{ padding: "10px" }}>
-      {/* ── Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 24,
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
         <div>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "#1a1a2e" }}>Analytics</h1>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 26,
+              fontWeight: 800,
+              color: "#1a1a2e",
+            }}
+          >
+            Analytics
+          </h1>
           <p style={{ margin: "4px 0 0", color: "#888", fontSize: 14 }}>
-            Track performance, revenue, and event insights at a glance.
+            Slice-powered demo insights for events, bookings, and payments.
           </p>
         </div>
-        <Select
-          value={period}
-          onChange={setPeriod}
-          size="large"
-          style={{ width: 160 }}
-        >
-          <Option value="weekly">This Week</Option>
-          <Option value="monthly">This Year</Option>
-        </Select>
       </div>
 
-      {/* ── KPI Stats Row */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={12} md={6}>
-          <StatCard
+          <InsightStatCard
             title="Total Events"
-            value={totalEvents || 125}
+            value={totalEvents}
             icon={<CalendarOutlined />}
-            color={COLORS.blue}
-            change={12.5}
+            color={C.blue}
+            change={12}
           />
         </Col>
         <Col xs={12} sm={12} md={6}>
-          <StatCard
+          <InsightStatCard
             title="Total Bookings"
-            value={totalBookings || 1893}
+            value={totalBookings}
             icon={<TeamOutlined />}
-            color={COLORS.purple}
-            change={8.2}
+            color={C.purple}
+            change={8}
           />
         </Col>
         <Col xs={12} sm={12} md={6}>
-          <StatCard
+          <InsightStatCard
             title="Total Revenue"
             value={totalRevenue}
             prefix="$"
             icon={<DollarOutlined />}
-            color={COLORS.green}
-            change={23.5}
+            color={C.green}
+            change={24}
           />
         </Col>
         <Col xs={12} sm={12} md={6}>
-          <StatCard
+          <InsightStatCard
             title="Growth Rate"
-            value={23.5}
+            value={growthRate}
             suffix="%"
             icon={<RiseOutlined />}
-            color={COLORS.orange}
-            change={4.1}
+            color={C.orange}
+            change={growthRate}
           />
         </Col>
       </Row>
 
-      {/* ── Revenue & Bookings Trend */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} lg={16}>
+        <Col xs={24} lg={12}>
           <Card
-            style={{ borderRadius: 14, boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}
-            styles={{ body: { paddingTop: 20 } }}
+            style={{
+              borderRadius: 14,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+            }}
           >
-            <SectionHeader
-              icon={<LineChartOutlined />}
-              title="Revenue & Bookings Trend"
-              subtitle={period === "weekly" ? "Last 7 days" : "Last 12 months"}
+            <InsightSectionHeader
+              icon={<BarChartOutlined />}
+              title="Revenue"
+              subtitle="This year"
             />
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={COLORS.blue}   stopOpacity={0.18} />
-                    <stop offset="95%" stopColor={COLORS.blue}   stopOpacity={0}    />
-                  </linearGradient>
-                  <linearGradient id="bkGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={COLORS.purple} stopOpacity={0.18} />
-                    <stop offset="95%" stopColor={COLORS.purple} stopOpacity={0}    />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" />
-                <XAxis dataKey={period === "weekly" ? "day" : "month"} tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke={COLORS.blue}
-                  strokeWidth={2.5}
-                  fill="url(#revGrad)"
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 6 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="bookings"
-                  stroke={COLORS.purple}
-                  strokeWidth={2.5}
-                  fill="url(#bkGrad)"
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 6 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <InsightBarChart
+              data={chartData}
+              dataKey="revenue"
+              color={C.blue}
+            />
           </Card>
         </Col>
-
-        {/* ── Category Breakdown Pie */}
-        <Col xs={24} lg={8}>
+        <Col xs={24} lg={12}>
           <Card
-            style={{ borderRadius: 14, boxShadow: "0 2px 16px rgba(0,0,0,0.07)", height: "100%" }}
-            styles={{ body: { paddingTop: 20 } }}
+            style={{
+              borderRadius: 14,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+            }}
           >
-            <SectionHeader
+            <InsightSectionHeader
+              icon={<LineChartOutlined />}
+              title="Bookings Trend"
+              subtitle="This year"
+            />
+            <InsightLineChart
+              data={chartData}
+              dataKey="bookings"
+              color={C.purple}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} md={12}>
+          <Card
+            style={{
+              borderRadius: 14,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+            }}
+          >
+            <InsightSectionHeader
               icon={<PieChartOutlined />}
               title="Events by Category"
-              subtitle="Distribution across types"
+              subtitle="Live from event slice"
             />
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={85}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {pieData.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v, n) => [v, n]} />
-              </PieChart>
-            </ResponsiveContainer>
-            {/* Legend */}
-            <div style={{ marginTop: 8 }}>
-              {pieData.map((item, i) => (
-                <div
-                  key={item.name}
-                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                    <span style={{ fontSize: 13, color: "#555" }}>{item.name}</span>
-                  </div>
-                  <span style={{ fontWeight: 700, fontSize: 13 }}>{item.value}</span>
-                </div>
-              ))}
-            </div>
+            <InsightDonutChart segments={categorySegments} />
           </Card>
         </Col>
-      </Row>
-
-      {/* ── Status Bar Chart + Monthly Events Line */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        {/* Status Distribution */}
         <Col xs={24} md={12}>
           <Card
-            style={{ borderRadius: 14, boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}
-            styles={{ body: { paddingTop: 20 } }}
+            style={{
+              borderRadius: 14,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+            }}
           >
-            <SectionHeader
-              icon={<BarChartOutlined />}
+            <InsightSectionHeader
+              icon={<PieChartOutlined />}
               title="Events by Status"
-              subtitle="Current status distribution"
+              subtitle="Live from event slice"
             />
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={statusData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" vertical={false} />
-                <XAxis dataKey="status" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                  {statusData.map((entry, i) => (
-                    <Cell
-                      key={i}
-                      fill={
-                        entry.status === "Upcoming"  ? COLORS.blue   :
-                        entry.status === "Ongoing"   ? COLORS.green  :
-                        entry.status === "Completed" ? COLORS.cyan   :
-                        COLORS.red
-                      }
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-
-        {/* Monthly Events Created Line */}
-        <Col xs={24} md={12}>
-          <Card
-            style={{ borderRadius: 14, boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}
-            styles={{ body: { paddingTop: 20 } }}
-          >
-            <SectionHeader
-              icon={<LineChartOutlined />}
-              title="Events Created per Month"
-              subtitle="New events added over time"
-            />
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={monthlyRevenueData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip content={<CustomTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey="events"
-                  stroke={COLORS.orange}
-                  strokeWidth={2.5}
-                  dot={{ r: 4, fill: COLORS.orange }}
-                  activeDot={{ r: 7 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <InsightDonutChart segments={statusSegments} />
           </Card>
         </Col>
       </Row>
 
-      {/* ── Quick Metrics Row */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         {[
-          { label: "Avg. Bookings / Event", value: totalEvents ? Math.round((totalBookings || 1893) / (totalEvents || 125)) : 15, icon: "📊", color: COLORS.blue },
-          { label: "Avg. Revenue / Event",  value: `$${totalEvents ? Math.round(totalRevenue / (totalEvents || 125)).toLocaleString() : "362"}`, icon: "💰", color: COLORS.green },
-          { label: "Cancellation Rate",     value: `${totalEvents ? Math.round((cancelledEvents / totalEvents) * 100) : 8}%`, icon: "❌", color: COLORS.red },
-          { label: "Completion Rate",       value: `${totalEvents ? Math.round(((completedEvents + ongoingEvents) / totalEvents) * 100) : 46}%`, icon: "✅", color: COLORS.cyan },
-        ].map((m) => (
-          <Col key={m.label} xs={12} sm={12} md={6}>
+          {
+            label: "Avg. Bookings / Event",
+            value:
+              totalEvents > 0 ? Math.round(totalBookings / totalEvents) : 0,
+            icon: "📊",
+            color: C.blue,
+          },
+          {
+            label: "Avg. Revenue / Event",
+            value:
+              totalEvents > 0
+                ? `$${Math.round(totalRevenue / totalEvents)}`
+                : "$0",
+            icon: "💰",
+            color: C.green,
+          },
+          {
+            label: "Cancellation Rate",
+            value:
+              totalBookings > 0
+                ? `${Math.round((cancelledEvents / totalBookings) * 100)}%`
+                : "0%",
+            icon: "❌",
+            color: C.red,
+          },
+          {
+            label: "Completion Rate",
+            value:
+              totalEvents > 0
+                ? `${Math.round(((completedEvents + ongoingEvents) / totalEvents) * 100)}%`
+                : "0%",
+            icon: "✅",
+            color: C.cyan,
+          },
+        ].map((item) => (
+          <Col key={item.label} xs={12} sm={12} md={6}>
             <Card
               style={{
                 borderRadius: 14,
-                boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
                 textAlign: "center",
-                border: `1px solid ${m.color}22`,
+                border: `1px solid ${item.color}22`,
               }}
             >
-              <div style={{ fontSize: 28 }}>{m.icon}</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: m.color, margin: "6px 0 4px" }}>
-                {m.value}
+              <div style={{ fontSize: 30 }}>{item.icon}</div>
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 900,
+                  color: item.color,
+                  margin: "6px 0 4px",
+                }}
+              >
+                {item.value}
               </div>
-              <div style={{ fontSize: 12, color: "#888" }}>{m.label}</div>
+              <div style={{ fontSize: 12, color: "#888" }}>{item.label}</div>
             </Card>
           </Col>
         ))}
       </Row>
 
-      {/* ── Top Performing Events Table */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} md={12}>
+          <Card
+            style={{
+              borderRadius: 14,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+            }}
+          >
+            <InsightSectionHeader
+              icon={<BarChartOutlined />}
+              title="Events Created"
+              subtitle="Period distribution"
+            />
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {chartData.map((row) => (
+                <div
+                  key={row.month}
+                  style={{ display: "flex", alignItems: "center", gap: 12 }}
+                >
+                  <span
+                    style={{
+                      width: 32,
+                      fontSize: 12,
+                      color: "#888",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {row.month}
+                  </span>
+                  <Progress
+                    percent={Math.min(
+                      100,
+                      Math.round(
+                        (row.events /
+                          Math.max(
+                            1,
+                            ...chartData.map((item) => item.events),
+                          )) *
+                          100,
+                      ),
+                    )}
+                    showInfo={false}
+                    strokeColor={C.orange}
+                    trailColor="#f5f5f5"
+                    style={{ flex: 1, marginBottom: 0 }}
+                  />
+                  <span
+                    style={{
+                      width: 20,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: C.orange,
+                    }}
+                  >
+                    {row.events}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} md={12}>
+          <Card
+            style={{
+              borderRadius: 14,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+            }}
+          >
+            <InsightSectionHeader
+              icon={<FireOutlined />}
+              title="Revenue Progress"
+              subtitle="Target: $15k"
+            />
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {chartData.map((row) => {
+                const pct = Math.min(
+                  100,
+                  Math.round((row.revenue / 15000) * 100),
+                );
+                return (
+                  <div
+                    key={row.month}
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <span
+                      style={{
+                        width: 32,
+                        fontSize: 12,
+                        color: "#888",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {row.month}
+                    </span>
+                    <Progress
+                      percent={pct}
+                      showInfo={false}
+                      strokeColor={
+                        pct >= 100 ? C.green : pct >= 60 ? C.blue : C.gold
+                      }
+                      trailColor="#f5f5f5"
+                      style={{ flex: 1, marginBottom: 0 }}
+                    />
+                    <span
+                      style={{
+                        width: 50,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: "#555",
+                        textAlign: "right",
+                      }}
+                    >
+                      ${(row.revenue / 1000).toFixed(1)}k
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
       <Card
-        style={{ borderRadius: 14, boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}
-        styles={{ body: { paddingTop: 20 } }}
+        style={{ borderRadius: 14, boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}
       >
-        <SectionHeader
+        <InsightSectionHeader
           icon={<TrophyOutlined />}
           title="Top Performing Events"
-          subtitle="Ranked by bookings and revenue"
+          subtitle="Sorted by revenue"
         />
-        <Table
-          dataSource={tableData}
-          columns={columns}
-          rowKey={(r, i) => r.name + i}
-          pagination={false}
-          size="middle"
-          scroll={{ x: 600 }}
-          rowClassName={(_, i) =>
-            i === 0 ? "top-row" : ""
-          }
-        />
+        {topEvents.length === 0 ? (
+          <Empty description="No event data available" />
+        ) : (
+          <Table
+            dataSource={topEvents}
+            columns={tableColumns}
+            rowKey={(row, index) => `${row.name}-${index}`}
+            pagination={false}
+            size="middle"
+            scroll={{ x: 600 }}
+          />
+        )}
       </Card>
     </div>
   );

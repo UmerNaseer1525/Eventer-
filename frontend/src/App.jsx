@@ -8,10 +8,11 @@ import Analytics from "./Pages/Analytics/Analytics";
 import AdminDashboard from "./Pages/Dashboard/AdminDashboard";
 import AdminProfile from "./Pages/Users/AdminProfile";
 import ManageEvents from "./Pages/Events/ManageEvents";
-import ManageCategories from "./Pages/Categories/ManageCategories";
+
 import ManageBookings from "./Pages/Bookings/ManageBookings";
-import ManageUsers from "./Pages/Users/ManageUsers";
+
 import MyProfile from "./Pages/Users/MyProfile";
+import UserRequests from "./Pages/Users/UserRequests";
 import "./App.css";
 import MainLayout from "./Components/MainLayout";
 import Dashboard from "./Pages/Dashboard/Dashboard";
@@ -21,26 +22,10 @@ import LandingPage from "./Pages/Landing/LandingPage";
 import Settings from "./Pages/Setting/Settings";
 import Events from "./Pages/Events/Events";
 import Users from "./Pages/Users/Users";
-import Categories from "./Pages/Categories/Categories";
-import Bookings from "./Pages/Bookings/Bookings";
-import Payments from "./Pages/Payments/Payments";
 import Reports from "./Pages/Reports/Reports";
 import Notifications from "./Pages/Notifications/Notifications";
 import ProtectRoute from "./Components/ProtectRoute";
-import {
-  createBrowserRouter,
-  redirect,
-  RouterProvider,
-} from "react-router-dom";
-import { fetchUsers } from "./Services/userSlice";
-
-function authLoader() {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    return redirect("/");
-  }
-  return null;
-}
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 const router = createBrowserRouter([
   {
@@ -57,21 +42,12 @@ const router = createBrowserRouter([
   },
   {
     element: <ProtectRoute />,
-    loader: authLoader,
     children: [
       {
         path: "/dashboard",
         element: (
           <MainLayout>
             <Dashboard />
-          </MainLayout>
-        ),
-      },
-      {
-        path: "/admin-dashboard",
-        element: (
-          <MainLayout>
-            <AdminDashboard />
           </MainLayout>
         ),
       },
@@ -108,6 +84,57 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "/my-profile",
+        element: (
+          <MainLayout>
+            <MyProfile />
+          </MainLayout>
+        ),
+      },
+
+      {
+        path: "/settings",
+        element: (
+          <MainLayout>
+            <Settings />
+          </MainLayout>
+        ),
+      },
+      {
+        path: "/notifications",
+        element: (
+          <MainLayout>
+            <Notifications />
+          </MainLayout>
+        ),
+      },
+    ],
+  },
+  {
+    element: <ProtectRoute allowedRoles={["user"]} />,
+    children: [
+      {
+        path: "/manage-bookings",
+        element: (
+          <MainLayout>
+            <ManageBookings />
+          </MainLayout>
+        ),
+      },
+    ],
+  },
+  {
+    element: <ProtectRoute allowedRoles={["admin"]} />,
+    children: [
+      {
+        path: "/admin-dashboard",
+        element: (
+          <MainLayout>
+            <AdminDashboard />
+          </MainLayout>
+        ),
+      },
+      {
         path: "/analytics",
         element: (
           <MainLayout>
@@ -120,6 +147,14 @@ const router = createBrowserRouter([
         element: (
           <MainLayout>
             <Users />
+          </MainLayout>
+        ),
+      },
+      {
+        path: "/user-requests",
+        element: (
+          <MainLayout>
+            <UserRequests />
           </MainLayout>
         ),
       },
@@ -140,82 +175,10 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/manage-categories",
-        element: (
-          <MainLayout>
-            <ManageCategories />
-          </MainLayout>
-        ),
-      },
-      {
-        path: "/manage-bookings",
-        element: (
-          <MainLayout>
-            <ManageBookings />
-          </MainLayout>
-        ),
-      },
-      {
-        path: "/manage-users",
-        element: (
-          <MainLayout>
-            <ManageUsers />
-          </MainLayout>
-        ),
-      },
-      {
-        path: "/my-profile",
-        element: (
-          <MainLayout>
-            <MyProfile />
-          </MainLayout>
-        ),
-      },
-      {
-        path: "/categories",
-        element: (
-          <MainLayout>
-            <Categories />
-          </MainLayout>
-        ),
-      },
-      {
-        path: "/bookings",
-        element: (
-          <MainLayout>
-            <Bookings />
-          </MainLayout>
-        ),
-      },
-      {
-        path: "/payments",
-        element: (
-          <MainLayout>
-            <Payments />
-          </MainLayout>
-        ),
-      },
-      {
         path: "/reports",
         element: (
           <MainLayout>
             <Reports />
-          </MainLayout>
-        ),
-      },
-      {
-        path: "/settings",
-        element: (
-          <MainLayout>
-            <Settings />
-          </MainLayout>
-        ),
-      },
-      {
-        path: "/notifications",
-        element: (
-          <MainLayout>
-            <Notifications />
           </MainLayout>
         ),
       },

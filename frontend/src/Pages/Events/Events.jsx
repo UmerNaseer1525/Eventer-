@@ -14,19 +14,23 @@ import {
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { addBooking } from "../../Services/bookingSlice";
+import { addPayment } from "../../Services/paymentSlice";
+import { updateEvent } from "../../Services/eventSlice";
 import Event_Detail from "../../Components/Event_Detail";
+import EventBookingPaymentModal from "../../Components/EventBookingPaymentModal";
 
 function Events() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const events = useSelector((state) => state.event);
-  console.log(events);
   const dispatch = useDispatch();
 
   const [error, setError] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
-  const [bookedEventId, setBookedEventId] = useState(-1);
+  const [bookingEvent, setBookingEvent] = useState(null);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
 
   function onSearchFilter(e) {
     setSearch(e.target.value);
@@ -36,23 +40,106 @@ function Events() {
     setStatus(e.target.value);
   }
 
-  function handleBookings(event_Detail) {
-    if (!event_Detail || !event_Detail.id) {
+  function openBookingModal(event) {
+    if (!event || !event.id) {
       setError({
-        message: "Invalid event data. Cannot add booking.",
-        detail: event_Detail,
+        message: "Invalid event data. Cannot start booking.",
+        detail: event,
       });
       return;
     }
+
     setError(null);
-    setTimeout(() => {
-      dispatch(addBooking(event_Detail));
-      notification.success({
-        message: "Booking Successful",
-        description: `Successfully booked ${event_Detail.title}`,
+    setBookingEvent(event);
+    setIsBookingModalOpen(true);
+  }
+
+  function handleConfirmBooking(values) {
+    if (!bookingEvent) return;
+
+    const seatsLeft = Math.max(
+      0,
+      Number(
+        bookingEvent.remainingSeats ??
+          bookingEvent.number_of_guests ??
+          bookingEvent.capacity ??
+          0,
+      ),
+    );
+
+    if (values.seatCount > seatsLeft) {
+      notification.error({
+        message: "Not enough seats",
+        description: "Please choose fewer seats.",
       });
-      setBookedEventId(-1);
-    }, 1000);
+      return;
+    }
+
+    const seatCount = Number(values.seatCount || 1);
+    const totalAmount = seatCount * Number(bookingEvent.ticketPrice ?? 0);
+    const remainingSeats = Math.max(0, seatsLeft - seatCount);
+    const today = new Date().toISOString().split("T")[0];
+    const stamp = Date.now();
+
+    setIsBookingSubmitting(true);
+    setTimeout(() => {
+      dispatch(
+        addBooking({
+          id: `BK-${stamp}`,
+          eventId: bookingEvent.id,
+          title: bookingEvent.title,
+          name: bookingEvent.title,
+          category: bookingEvent.category,
+          location: bookingEvent.location,
+          organizer: bookingEvent.organizer || "EventX",
+          contact: bookingEvent.contact || "-",
+          status: bookingEvent.status === "Ongoing" ? "Ongoing" : "Upcoming",
+          paymentStatus: "Paid",
+          amount: totalAmount,
+          price: totalAmount,
+          date: bookingEvent.date || today,
+          time: bookingEvent.time || "-",
+          cover: bookingEvent.bannerImage || bookingEvent.cover,
+          bannerImage: bookingEvent.bannerImage || bookingEvent.cover,
+          number_of_guests: seatCount,
+          reservedSeats: seatCount,
+          user: values.fullName,
+          email: values.email,
+          method: values.paymentMethod,
+        }),
+      );
+
+      dispatch(
+        addPayment({
+          id: `PAY-${stamp}`,
+          eventId: bookingEvent.id,
+          eventName: bookingEvent.title,
+          user: values.fullName,
+          email: values.email,
+          amount: totalAmount,
+          method: values.paymentMethod,
+          status: "Completed",
+          date: today,
+        }),
+      );
+
+      dispatch(
+        updateEvent({
+          ...bookingEvent,
+          remainingSeats,
+          number_of_guests: remainingSeats,
+        }),
+      );
+
+      notification.success({
+        message: "Seat Reserved",
+        description: `${seatCount} seat(s) reserved for ${bookingEvent.title}.`,
+      });
+
+      setIsBookingSubmitting(false);
+      setIsBookingModalOpen(false);
+      setBookingEvent(null);
+    }, 1200);
   }
 
   const validEvents = Array.isArray(events)
@@ -144,7 +231,6 @@ function Events() {
           </Radio.Group>
         </Col>
       </Row>
-      {/* Cancelled Events Alert */}
       {cancelledEvents.length > 0 && (
         <>
           <Alert
@@ -245,7 +331,6 @@ function Events() {
         </>
       )}
       <Divider />
-      {/* Normal Events */}
       <Row gutter={[24, 24]}>
         {filteredEvents.length === 0 ? (
           <Col span={24}>
@@ -254,7 +339,16 @@ function Events() {
         ) : (
           filteredEvents.map((event) => {
             let bookingDisabled = false;
-            let bookingLabel = "Bookings";
+            let bookingLabel = "Book Now";
+            const seatsLeft = Math.max(
+              0,
+              Number(
+                event.remainingSeats ??
+                  event.number_of_guests ??
+                  event.capacity ??
+                  0,
+              ),
+            );
             if (
               event.status.toLowerCase() === "completed" ||
               event.status.toLowerCase() === "cancelled"
@@ -264,9 +358,9 @@ function Events() {
             } else if (event.status.toLowerCase() === "ongoing") {
               bookingDisabled = true;
               bookingLabel = "Contact Management";
-            } else if (event.number_of_guests <= 0) {
+            } else if (seatsLeft <= 0) {
               bookingDisabled = true;
-              bookingLabel = "Booking Full";
+              bookingLabel = "Sold Out";
             }
             return (
               <Col
@@ -335,13 +429,14 @@ function Events() {
                     </Button>,
                     <Button
                       key="bookings"
-                      loading={bookedEventId === event.id}
+                      loading={
+                        isBookingSubmitting && bookingEvent?.id === event.id
+                      }
                       style={{ borderRadius: 6, width: "90%" }}
                       disabled={bookingDisabled}
                       size="medium"
                       onClick={() => {
-                        handleBookings(event);
-                        setBookedEventId(event.id);
+                        openBookingModal(event);
                       }}
                     >
                       {bookingLabel}
@@ -390,6 +485,21 @@ function Events() {
         event={selectedEvent}
         open={isDetailDrawerOpen}
         onClose={() => setIsDetailDrawerOpen(false)}
+        onBook={() => {
+          setIsDetailDrawerOpen(false);
+          openBookingModal(selectedEvent);
+        }}
+      />
+      <EventBookingPaymentModal
+        event={bookingEvent}
+        open={isBookingModalOpen}
+        loading={isBookingSubmitting}
+        onClose={() => {
+          if (isBookingSubmitting) return;
+          setIsBookingModalOpen(false);
+          setBookingEvent(null);
+        }}
+        onConfirm={handleConfirmBooking}
       />
     </div>
   );

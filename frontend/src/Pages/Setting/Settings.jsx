@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { UploadOutlined } from "@ant-design/icons";
 import {
   Avatar,
+  Alert,
   Button,
   Card,
   Form,
@@ -11,20 +12,14 @@ import {
   message,
   notification,
 } from "antd";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import styles from "./setting.module.css";
 import { updateUserRecord } from "../../Services/userSlice";
+import { addUnblockRequest } from "../../Services/requestSlice";
+import { getStoredUser, isBlockedUser } from "../../utils/auth";
 
 const USER_BASE_URL = "http://localhost:3000/api/users";
 const BACKEND_BASE_URL = "http://localhost:3000";
-
-function getStoredUser() {
-  try {
-    return JSON.parse(localStorage.getItem("user") || "null");
-  } catch {
-    return null;
-  }
-}
 
 function resolveImageUrl(imagePath) {
   if (!imagePath) {
@@ -44,8 +39,23 @@ function Settings() {
   const maxFileSizeInMB = 2;
   const [profileImageFile, setProfileImageFile] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState("");
+  const [accountStatus, setAccountStatus] = useState("active");
+
+  const requests = useSelector((state) =>
+    Array.isArray(state.request) ? state.request : [],
+  );
 
   const currentUser = useMemo(() => getStoredUser(), []);
+  const hasPendingUnblockRequest = useMemo(
+    () =>
+      requests.some(
+        (request) =>
+          request.type === "unblock" &&
+          request.email === currentUser?.email &&
+          request.status === "pending",
+      ),
+    [requests, currentUser?.email],
+  );
 
   useEffect(() => {
     const loadSettingsData = async () => {
@@ -72,6 +82,12 @@ function Settings() {
         }
 
         const data = await response.json();
+
+        const latestUser = { ...currentUser, ...data };
+        localStorage.setItem("user", JSON.stringify(latestUser));
+        window.dispatchEvent(new Event("auth-change"));
+
+        setAccountStatus(data.status || "active");
         form.setFieldsValue({
           firstName: data.firstName || "",
           lastName: data.lastName || "",
@@ -80,6 +96,7 @@ function Settings() {
         });
         setProfileImagePreview(resolveImageUrl(data.profileImage));
       } catch (error) {
+        setAccountStatus(currentUser?.status || "active");
         form.setFieldsValue({
           firstName: currentUser.firstName || "",
           lastName: currentUser.lastName || "",
@@ -99,6 +116,29 @@ function Settings() {
 
     loadSettingsData();
   }, [api, currentUser, form]);
+
+  function handleUnblockRequest() {
+    if (!currentUser?.email) {
+      message.error("Unable to identify your account.");
+      return;
+    }
+
+    dispatch(
+      addUnblockRequest({
+        email: currentUser.email,
+        fullName:
+          `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim(),
+        username: currentUser.username,
+        reason: "I request account reactivation.",
+      }),
+    );
+
+    api.success({
+      message: "Request Submitted",
+      description: "Your unblock request has been sent to admin.",
+      placement: "topRight",
+    });
+  }
 
   async function onFinish(values) {
     setIsLoading(true);
@@ -188,108 +228,131 @@ function Settings() {
     <Spin spinning={isLoading} description="Loading">
       <div className={styles.settingsPage}>
         <h1 className={styles.title}>Settings</h1>
-        <Card className={styles.settingCard}>
-          <div className={styles.layout}>
+        {isBlockedUser({ status: accountStatus }) ? (
+          <Card className={styles.settingCard}>
             {contextHolder}
-            <div className={styles.formSection}>
-              <Form
-                form={form}
-                layout="vertical"
-                onFinish={onFinish}
-                className={styles.form}
-              >
-                <Form.Item
-                  name={"firstName"}
-                  label="First Name"
-                  rules={[
-                    {
-                      pattern: /^[a-zA-Z]+$/,
-                      message: "Only characters are allowed",
-                    },
-                  ]}
+            <Alert
+              type="error"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message="Your account is blocked"
+              description="You currently cannot access other pages. Submit a request to admin to unblock your account."
+            />
+            <Button
+              type="primary"
+              size="large"
+              disabled={hasPendingUnblockRequest}
+              onClick={handleUnblockRequest}
+            >
+              {hasPendingUnblockRequest
+                ? "Request Already Sent"
+                : "Request to Unblock"}
+            </Button>
+          </Card>
+        ) : (
+          <Card className={styles.settingCard}>
+            <div className={styles.layout}>
+              {contextHolder}
+              <div className={styles.formSection}>
+                <Form
+                  form={form}
+                  layout="vertical"
+                  onFinish={onFinish}
+                  className={styles.form}
                 >
-                  <Input placeholder="First Name" size="large" />
-                </Form.Item>
-                <Form.Item
-                  name={"lastName"}
-                  label="Last Name"
-                  rules={[
-                    {
-                      pattern: /^[a-zA-Z]+$/,
-                      message: "Only characters are allowed",
-                    },
-                  ]}
-                >
-                  <Input placeholder="Last Name" size="large" />
-                </Form.Item>
+                  <Form.Item
+                    name={"firstName"}
+                    label="First Name"
+                    rules={[
+                      {
+                        pattern: /^[a-zA-Z]+$/,
+                        message: "Only characters are allowed",
+                      },
+                    ]}
+                  >
+                    <Input placeholder="First Name" size="large" />
+                  </Form.Item>
+                  <Form.Item
+                    name={"lastName"}
+                    label="Last Name"
+                    rules={[
+                      {
+                        pattern: /^[a-zA-Z]+$/,
+                        message: "Only characters are allowed",
+                      },
+                    ]}
+                  >
+                    <Input placeholder="Last Name" size="large" />
+                  </Form.Item>
 
-                <Form.Item name="username" label="Username">
-                  <Input placeholder="Username" size="large" />
-                </Form.Item>
+                  <Form.Item name="username" label="Username">
+                    <Input placeholder="Username" size="large" />
+                  </Form.Item>
 
-                <Form.Item
-                  name="password"
-                  label="New Password"
-                  rules={[
-                    { min: 8, message: "Password must be >= characters" },
-                  ]}
-                >
-                  <Input.Password
-                    placeholder="Enter New Password"
-                    size="large"
-                  />
-                </Form.Item>
+                  <Form.Item
+                    name="password"
+                    label="New Password"
+                    rules={[
+                      { min: 8, message: "Password must be >= characters" },
+                    ]}
+                  >
+                    <Input.Password
+                      placeholder="Enter New Password"
+                      size="large"
+                    />
+                  </Form.Item>
 
-                <Form.Item
-                  name="phone"
-                  label="Phone"
-                  rules={[
-                    {
-                      pattern: /^\+?[0-9]+$/,
-                      message: "Only numbers are allowed (0-9) without space",
-                    },
-                  ]}
-                >
-                  <Input placeholder="Phone" size="large" />
-                </Form.Item>
+                  <Form.Item
+                    name="phone"
+                    label="Phone"
+                    rules={[
+                      {
+                        pattern: /^\+?[0-9]+$/,
+                        message: "Only numbers are allowed (0-9) without space",
+                      },
+                    ]}
+                  >
+                    <Input placeholder="Phone" size="large" />
+                  </Form.Item>
 
-                <Form.Item>
-                  <Button type="primary" htmlType="submit" size="large">
-                    Save Settings
-                  </Button>
-                </Form.Item>
-              </Form>
-            </div>
-
-            <div className={styles.profileSection}>
-              <div>
-                <h3 className={styles.profileTitle}>Profile Image</h3>
-                <Avatar
-                  src={profileImagePreview}
-                  className={styles.profileImage}
-                />
+                  <Form.Item>
+                    <Button type="primary" htmlType="submit" size="large">
+                      Save Settings
+                    </Button>
+                  </Form.Item>
+                </Form>
               </div>
 
-              <Upload
-                accept="image/jpeg,image/png"
-                maxCount={1}
-                showUploadList={false}
-                beforeUpload={validateUploadFile}
-                onChange={handleProfileImageChange}
-              >
-                <Button
-                  type="primary"
-                  icon={<UploadOutlined />}
-                  size="large"
-                  block
+              <div className={styles.profileSection}>
+                <div>
+                  <h3 className={styles.profileTitle}>Profile Image</h3>
+                  <Avatar
+                    src={profileImagePreview}
+                    className={styles.profileImage}
+                  />
+                </div>
+
+                <Upload
+                  accept="image/jpeg,image/png"
+                  maxCount={1}
+                  showUploadList={false}
+                  beforeUpload={validateUploadFile}
+                  onChange={handleProfileImageChange}
                 >
-                  Upload Image
-                </Button>
-              </Upload>
-              <p className={styles.uploadNote}>Only JPG/PNG, max 2MB</p>
+                  <Button
+                    type="primary"
+                    icon={<UploadOutlined />}
+                    size="large"
+                    block
+                  >
+                    Upload Image
+                  </Button>
+                </Upload>
+                <p className={styles.uploadNote}>Only JPG/PNG, max 2MB</p>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        )}
       </div>
     </Spin>
   );

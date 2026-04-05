@@ -19,7 +19,6 @@ function EventApprovalQueue({ open, onClose }) {
   const dispatch = useDispatch();
   const [editModal, setEditModal] = useState({ open: false, event: null });
 
-  // Filter for pending or rejected events
   const queue = events.filter(
     (event) =>
       event.approvedStatus === "Pending" || event.approvedStatus === "Rejected",

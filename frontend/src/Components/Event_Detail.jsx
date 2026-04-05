@@ -26,8 +26,14 @@ const statusColors = {
   Cancelled: "red",
 };
 
-export default function Event_Detail({ open, onClose, event }) {
+export default function Event_Detail({ open, onClose, onBook, event }) {
   if (!event) return null;
+  const remainingSeats = Math.max(
+    0,
+    Number(
+      event.remainingSeats ?? event.number_of_guests ?? event.capacity ?? 0,
+    ),
+  );
   return (
     <Drawer
       title={
@@ -50,7 +56,6 @@ export default function Event_Detail({ open, onClose, event }) {
       open={open}
       bodyStyle={{ padding: 0, background: "#fafbfc" }}
     >
-      {/* Cover Image */}
       <div
         style={{
           width: "100%",
@@ -97,11 +102,11 @@ export default function Event_Detail({ open, onClose, event }) {
           <Descriptions.Item
             label={
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <TeamOutlined /> <span>Capacity</span>
+                <TeamOutlined /> <span>Seats Left</span>
               </span>
             }
           >
-            {event.capacity}
+            {remainingSeats}
           </Descriptions.Item>
           <Descriptions.Item
             label={
@@ -118,6 +123,17 @@ export default function Event_Detail({ open, onClose, event }) {
         <Typography.Paragraph style={{ minHeight: 60 }}>
           {event.description || "No description provided."}
         </Typography.Paragraph>
+        {onBook ? (
+          <Button
+            type="primary"
+            block
+            style={{ borderRadius: 8, marginTop: 12 }}
+            disabled={remainingSeats <= 0}
+            onClick={onBook}
+          >
+            {remainingSeats <= 0 ? "Sold Out" : "Book Now"}
+          </Button>
+        ) : null}
       </div>
     </Drawer>
   );

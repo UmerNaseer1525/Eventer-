@@ -1,5 +1,9 @@
 const LOGIN_URL = "http://localhost:3000/api/users/login";
-const BASE_URL = "http://localhost:3000/api/users";
+const USERS_URL = "http://localhost:3000/api/users";
+
+function normalizeRole(role) {
+  return String(role || "").toLowerCase() === "admin" ? "admin" : "user";
+}
 
 async function validateUser(data) {
   try {
@@ -21,8 +25,34 @@ async function validateUser(data) {
 
     if (result.token) {
       localStorage.setItem("token", result.token);
-      localStorage.setItem("user", JSON.stringify(result.user));
-      // Trigger a custom event to notify components about auth change
+
+      let mergedUser = {
+        ...result.user,
+        role: normalizeRole(result?.user?.role),
+      };
+
+      if (mergedUser?.email) {
+        const profileResponse = await fetch(
+          `${USERS_URL}/${encodeURIComponent(mergedUser.email)}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${result.token}`,
+            },
+          },
+        );
+
+        if (profileResponse.ok) {
+          const profile = await profileResponse.json();
+          mergedUser = {
+            ...mergedUser,
+            status: profile?.status || mergedUser?.status || "active",
+            role: normalizeRole(profile?.role || mergedUser?.role),
+          };
+        }
+      }
+
+      localStorage.setItem("user", JSON.stringify(mergedUser));
       window.dispatchEvent(new Event("auth-change"));
     }
 
@@ -36,7 +66,6 @@ async function validateUser(data) {
 function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-  // Trigger a custom event to notify components about auth change
   window.dispatchEvent(new Event("auth-change"));
 }
 

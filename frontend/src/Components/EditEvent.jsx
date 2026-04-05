@@ -2,7 +2,6 @@ import { Form, Input, Modal, Select, Button, notification } from "antd";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { updateEvent } from "../Services/eventSlice";
-// import moment from "moment"; // Uncomment if you want to use moment for date parsing
 
 export default function EditEvent({ isOpen, onModalClose, record }) {
   const [form] = Form.useForm();
@@ -11,12 +10,6 @@ export default function EditEvent({ isOpen, onModalClose, record }) {
 
   useEffect(() => {
     if (isOpen && record) {
-      // If you want to use moment, uncomment the import and next lines
-      // const values = { ...record };
-      // if (record.date) {
-      //   values.date = moment(record.date, "YYYY-MM-DD");
-      // }
-      // form.setFieldsValue(values);
       form.setFieldsValue(record);
     } else {
       form.resetFields();

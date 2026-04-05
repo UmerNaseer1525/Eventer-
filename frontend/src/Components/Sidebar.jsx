@@ -1,7 +1,5 @@
 import {
-  AppstoreOutlined,
   BarChartOutlined,
-  CalendarOutlined,
   CreditCardOutlined,
   DashboardOutlined,
   LogoutOutlined,
@@ -11,89 +9,76 @@ import {
   SettingOutlined,
 } from "@ant-design/icons";
 import { Menu, Button } from "antd";
-import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { logout } from "../Services/userService";
 import style from "./sidebar.module.css";
+import { getStoredUser, isBlockedUser, normalizeRole } from "../utils/auth";
 
 function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const user = getStoredUser();
+  const role = normalizeRole(user?.role);
+  const blocked = role === "user" && isBlockedUser(user);
 
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("user") || "null");
-    } catch {
-      return null;
-    }
-  });
+  const adminItems = [
+    {
+      key: "/admin-dashboard",
+      icon: <DashboardOutlined />,
+      label: "Dashboard",
+    },
+    { key: "/analytics", icon: <BarChartOutlined />, label: "Analytics" },
+    { key: "/reports", icon: <BarChartOutlined />, label: "Reports" },
+    { key: "/users", icon: <UserOutlined />, label: "User Management" },
+    {
+      key: "/user-requests",
+      icon: <CreditCardOutlined />,
+      label: "User Requests",
+    },
+    {
+      key: "/manage-events",
+      icon: <ScheduleOutlined />,
+      label: "Event Requests",
+    },
+    { key: "/admin-profile", icon: <UserOutlined />, label: "Profile" },
+    { key: "/settings", icon: <SettingOutlined />, label: "Settings" },
+    {
+      key: "/notifications",
+      icon: <NotificationOutlined />,
+      label: "Notifications",
+    },
+  ];
 
-  useEffect(() => {
-    const handleAuthChange = () => {
-      try {
-        setCurrentUser(JSON.parse(localStorage.getItem("user") || "null"));
-      } catch {
-        setCurrentUser(null);
-      }
-    };
+  const userItems = [
+    { key: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
+    { key: "/events", icon: <ScheduleOutlined />, label: "Events" },
+    { key: "/my-events", icon: <ScheduleOutlined />, label: "My Events" },
+    {
+      key: "/manage-bookings",
+      icon: <CreditCardOutlined />,
+      label: "Bookings",
+    },
+    { key: "/my-profile", icon: <UserOutlined />, label: "Profile" },
+    { key: "/settings", icon: <SettingOutlined />, label: "Settings" },
+    {
+      key: "/notifications",
+      icon: <NotificationOutlined />,
+      label: "Notifications",
+    },
+  ];
 
-    window.addEventListener("auth-change", handleAuthChange);
-    return () => window.removeEventListener("auth-change", handleAuthChange);
-  }, []);
+  const blockedItems = [
+    { key: "/settings", icon: <SettingOutlined />, label: "Account Status" },
+  ];
 
-  const menuItems = useMemo(() => {
-    const profileMenuItem =
-      currentUser?.role === "admin"
-        ? {
-            key: "/admin-profile",
-            icon: <UserOutlined />,
-            label: "Admin Profile",
-          }
-        : { key: "/my-profile", icon: <UserOutlined />, label: "My Profile" };
-
-    return [
-      { key: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
-      {
-        key: "/admin-dashboard",
-        icon: <DashboardOutlined />,
-        label: "Admin Dashboard",
-      },
-      { key: "/events", icon: <ScheduleOutlined />, label: "Events" },
-      { key: "/my-events", icon: <ScheduleOutlined />, label: "My Events" },
-      { key: "/analytics", icon: <BarChartOutlined />, label: "Analytics" },
-      { key: "/users", icon: <UserOutlined />, label: "Users" },
-      profileMenuItem,
-      {
-        key: "/manage-events",
-        icon: <ScheduleOutlined />,
-        label: "Admin Manage Events",
-      },
-      { key: "/manage-users", icon: <UserOutlined />, label: "Manage Users" },
-      {
-        key: "/manage-categories",
-        icon: <AppstoreOutlined />,
-        label: "Manage Categories",
-      },
-      {
-        key: "/manage-bookings",
-        icon: <CreditCardOutlined />,
-        label: "Bookings & Payments",
-      },
-      { key: "/categories", icon: <AppstoreOutlined />, label: "Categories" },
-      { key: "/bookings", icon: <CalendarOutlined />, label: "Bookings" },
-      { key: "/payments", icon: <CreditCardOutlined />, label: "Payments" },
-      { key: "/reports", icon: <BarChartOutlined />, label: "Reports" },
-      { key: "/settings", icon: <SettingOutlined />, label: "Settings" },
-      {
-        key: "/notifications",
-        icon: <NotificationOutlined />,
-        label: "Notifications",
-      },
-    ];
-  }, [currentUser?.role]);
+  const menuItems = blocked
+    ? blockedItems
+    : role === "admin"
+      ? adminItems
+      : userItems;
 
   const handleLogout = () => {
-    logout(); // Clear token and user data from localStorage
+    logout();
     navigate("/", { replace: true });
   };
 

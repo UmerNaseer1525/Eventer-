@@ -13,7 +13,12 @@ function ManageEvents() {
   const dispatch = useDispatch();
   const requests = useSelector((state) => state.request);
   const events = useSelector((state) => state.event);
-  const matchedEvents = requests
+  const eventRequests = requests.filter(
+    (request) =>
+      (request.type === "eventApproval" || request.eventId !== undefined) &&
+      (request.status === undefined || request.status === "pending"),
+  );
+  const matchedEvents = eventRequests
     .map((req) => events.find((event) => event.id === req.eventId))
     .filter((event) => event !== undefined);
   function handleReject(eventId, rejection_reason) {

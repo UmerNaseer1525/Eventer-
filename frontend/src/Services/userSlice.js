@@ -95,7 +95,6 @@ export const fetchUsers = () => {
 
       const data = await response.json();
       dispatch(setUsers(data));
-      // return data;
     } catch (error) {
       throw new Error(error.message);
     }
@@ -184,6 +183,15 @@ export const updateUserStatus = (email, newStatus) => async (dispatch) => {
       );
     }
     dispatch(updateStatus({ email: email, status: newStatus }));
+
+    const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+    if (storedUser?.email === email) {
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ ...storedUser, status: newStatus }),
+      );
+      window.dispatchEvent(new Event("auth-change"));
+    }
   } catch (error) {
     throw new Error(error.message);
   }

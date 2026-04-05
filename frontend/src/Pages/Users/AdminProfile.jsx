@@ -1,7 +1,7 @@
 import ProfilePage from "./ProfilePage";
 
 function AdminProfile() {
-  return <ProfilePage title="Admin Profile" />;
+  return <ProfilePage title="Profile" />;
 }
 
 export default AdminProfile;

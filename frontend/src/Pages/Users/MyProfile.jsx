@@ -1,7 +1,7 @@
 import ProfilePage from "./ProfilePage";
 
 function MyProfile() {
-  return <ProfilePage title="My Profile" />;
+  return <ProfilePage title="Profile" />;
 }
 
 export default MyProfile;

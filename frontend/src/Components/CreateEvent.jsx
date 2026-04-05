@@ -17,14 +17,6 @@ export default function CreateEvent({ isOpen, onModalClose }) {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
 
-  // const getBase64 = (file) =>
-  //   new Promise((resolve, reject) => {
-  //     const reader = new FileReader();
-  //     reader.readAsDataURL(file);
-  //     reader.onload = () => resolve(reader.result);
-  //     reader.onerror = (error) => reject(error);
-  //   });
-
   const onFinish = (values) => {
     const dateTime = values.date;
     const date = dateTime.format("YYYY-MM-DD");
@@ -141,7 +133,6 @@ export default function CreateEvent({ isOpen, onModalClose }) {
           <Input placeholder="e.g. London" />
         </Form.Item>
 
-        {/* Contact field removed, not in Event model */}
         <Form.Item
           name={"date"}
           label="Date of Event"

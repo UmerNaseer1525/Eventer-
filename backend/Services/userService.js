@@ -25,8 +25,15 @@ const createUser = async (userData) => {
 
 const updateUser = async (userEmail, values) => {
   const updateFields = {};
-  const { firstName, lastName, username, password, phone, profileImage } =
-    values;
+  const {
+    firstName,
+    lastName,
+    username,
+    password,
+    phone,
+    profileImage,
+    status,
+  } = values;
 
   if (firstName !== undefined) updateFields.firstName = firstName;
   if (lastName !== undefined) updateFields.lastName = lastName;
@@ -34,6 +41,7 @@ const updateUser = async (userEmail, values) => {
   if (password !== undefined) updateFields.password = password;
   if (phone !== undefined) updateFields.phone = phone;
   if (profileImage !== undefined) updateFields.profileImage = profileImage;
+  if (status !== undefined) updateFields.status = status;
 
   return await User.updateOne({ email: userEmail }, { $set: updateFields });
 };

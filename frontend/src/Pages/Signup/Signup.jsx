@@ -9,25 +9,27 @@ import { Button, Form, Input, notification, Spin } from "antd";
 import { useNavigate } from "react-router-dom";
 import style from "./signup.module.css";
 import { useState } from "react";
+import { useDispatch } from "react-redux";
 import { createNewUser } from "../../Services/userSlice";
 
 function Signup() {
   const [api, contextHolder] = notification.useNotification();
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   async function onFinish(value) {
     let update_value = {
       ...value,
       status: "active",
-      role: "organizer",
+      role: "user",
       profileImage: "profile.png",
     };
 
     setIsLoading(true);
 
     try {
-      const result = await createNewUser(update_value);
+      const result = await dispatch(createNewUser(update_value));
 
       if (result instanceof Error) {
         throw result;

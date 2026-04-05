@@ -256,9 +256,6 @@ function MyEvents() {
                           borderRadius: 6,
                           width: "90%",
                         }}
-                        // onClick={() => {
-                        //   dispatch(deleteEvent({ id: event.id }));
-                        // }}
                         danger
                       >
                         Delete
