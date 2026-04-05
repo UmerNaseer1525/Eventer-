@@ -40,30 +40,132 @@ const { RangePicker } = DatePicker;
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  Completed: { color: "success",   antColor: "green",   icon: <CheckCircleOutlined /> },
-  Pending:   { color: "warning",   antColor: "gold",    icon: <ClockCircleOutlined /> },
-  Failed:    { color: "error",     antColor: "red",     icon: <CloseCircleOutlined /> },
-  Refunded:  { color: "default",   antColor: "default", icon: <CloseCircleOutlined /> },
+  Completed: {
+    color: "success",
+    antColor: "green",
+    icon: <CheckCircleOutlined />,
+  },
+  Pending: {
+    color: "warning",
+    antColor: "gold",
+    icon: <ClockCircleOutlined />,
+  },
+  Failed: { color: "error", antColor: "red", icon: <CloseCircleOutlined /> },
+  Refunded: {
+    color: "default",
+    antColor: "default",
+    icon: <CloseCircleOutlined />,
+  },
 };
 
 const METHOD_ICONS = {
   "Credit Card": <CreditCardOutlined />,
   "Bank Transfer": <BankOutlined />,
-  "Wallet": <WalletOutlined />,
+  Wallet: <WalletOutlined />,
 };
 
 // ─── Fallback demo data (shown when Redux store is empty) ──────────────────────
 const DEMO_PAYMENTS = [
-  { id: "PAY-001", eventName: "Tech Conference 2026", user: "Ali Hassan",    amount: 199,  method: "Credit Card",  status: "Completed", date: "2026-03-15", email: "ali@example.com"    },
-  { id: "PAY-002", eventName: "Music Festival",       user: "Sara Khan",     amount: 89,   method: "Wallet",       status: "Completed", date: "2026-03-18", email: "sara@example.com"   },
-  { id: "PAY-003", eventName: "Startup Summit",       user: "Bilal Ahmed",   amount: 249,  method: "Bank Transfer",status: "Pending",   date: "2026-03-20", email: "bilal@example.com"  },
-  { id: "PAY-004", eventName: "Art & Design Expo",    user: "Hina Malik",    amount: 59,   method: "Credit Card",  status: "Failed",    date: "2026-03-22", email: "hina@example.com"   },
-  { id: "PAY-005", eventName: "Jazz Night",           user: "Usman Tariq",   amount: 49,   method: "Wallet",       status: "Completed", date: "2026-03-25", email: "usman@example.com"  },
-  { id: "PAY-006", eventName: "Tech Conference 2026", user: "Ayesha Raza",   amount: 199,  method: "Credit Card",  status: "Refunded",  date: "2026-03-26", email: "ayesha@example.com" },
-  { id: "PAY-007", eventName: "Music Festival",       user: "Kamran Shah",   amount: 89,   method: "Bank Transfer",status: "Completed", date: "2026-03-28", email: "kamran@example.com" },
-  { id: "PAY-008", eventName: "Photography Workshop", user: "Zara Noor",     amount: 79,   method: "Wallet",       status: "Pending",   date: "2026-03-30", email: "zara@example.com"   },
-  { id: "PAY-009", eventName: "Startup Summit",       user: "Faisal Iqbal",  amount: 249,  method: "Credit Card",  status: "Completed", date: "2026-04-01", email: "faisal@example.com" },
-  { id: "PAY-010", eventName: "Jazz Night",           user: "Maryam Butt",   amount: 49,   method: "Wallet",       status: "Failed",    date: "2026-04-02", email: "maryam@example.com" },
+  {
+    id: "PAY-001",
+    eventName: "Tech Conference 2026",
+    user: "Ali Hassan",
+    amount: 199,
+    method: "Credit Card",
+    status: "Completed",
+    date: "2026-03-15",
+    email: "ali@example.com",
+  },
+  {
+    id: "PAY-002",
+    eventName: "Music Festival",
+    user: "Sara Khan",
+    amount: 89,
+    method: "Wallet",
+    status: "Completed",
+    date: "2026-03-18",
+    email: "sara@example.com",
+  },
+  {
+    id: "PAY-003",
+    eventName: "Startup Summit",
+    user: "Bilal Ahmed",
+    amount: 249,
+    method: "Bank Transfer",
+    status: "Pending",
+    date: "2026-03-20",
+    email: "bilal@example.com",
+  },
+  {
+    id: "PAY-004",
+    eventName: "Art & Design Expo",
+    user: "Hina Malik",
+    amount: 59,
+    method: "Credit Card",
+    status: "Failed",
+    date: "2026-03-22",
+    email: "hina@example.com",
+  },
+  {
+    id: "PAY-005",
+    eventName: "Jazz Night",
+    user: "Usman Tariq",
+    amount: 49,
+    method: "Wallet",
+    status: "Completed",
+    date: "2026-03-25",
+    email: "usman@example.com",
+  },
+  {
+    id: "PAY-006",
+    eventName: "Tech Conference 2026",
+    user: "Ayesha Raza",
+    amount: 199,
+    method: "Credit Card",
+    status: "Refunded",
+    date: "2026-03-26",
+    email: "ayesha@example.com",
+  },
+  {
+    id: "PAY-007",
+    eventName: "Music Festival",
+    user: "Kamran Shah",
+    amount: 89,
+    method: "Bank Transfer",
+    status: "Completed",
+    date: "2026-03-28",
+    email: "kamran@example.com",
+  },
+  {
+    id: "PAY-008",
+    eventName: "Photography Workshop",
+    user: "Zara Noor",
+    amount: 79,
+    method: "Wallet",
+    status: "Pending",
+    date: "2026-03-30",
+    email: "zara@example.com",
+  },
+  {
+    id: "PAY-009",
+    eventName: "Startup Summit",
+    user: "Faisal Iqbal",
+    amount: 249,
+    method: "Credit Card",
+    status: "Completed",
+    date: "2026-04-01",
+    email: "faisal@example.com",
+  },
+  {
+    id: "PAY-010",
+    eventName: "Jazz Night",
+    user: "Maryam Butt",
+    amount: 49,
+    method: "Wallet",
+    status: "Failed",
+    date: "2026-04-02",
+    email: "maryam@example.com",
+  },
 ];
 
 // ─── Detail Modal ──────────────────────────────────────────────────────────────
@@ -82,7 +184,12 @@ function PaymentDetailModal({ payment, open, onClose }) {
         </div>
       }
       footer={
-        <Button type="primary" onClick={onClose} block style={{ borderRadius: 8 }}>
+        <Button
+          type="primary"
+          onClick={onClose}
+          block
+          style={{ borderRadius: 8 }}
+        >
           Close
         </Button>
       }
@@ -106,17 +213,29 @@ function PaymentDetailModal({ payment, open, onClose }) {
         <Tag
           color={cfg.antColor}
           icon={cfg.icon}
-          style={{ marginTop: 8, fontSize: 13, padding: "2px 14px", borderRadius: 20 }}
+          style={{
+            marginTop: 8,
+            fontSize: 13,
+            padding: "2px 14px",
+            borderRadius: 20,
+          }}
         >
           {payment.status}
         </Tag>
       </div>
 
-      <Descriptions column={1} size="small" bordered labelStyle={{ fontWeight: 600, width: 140 }}>
+      <Descriptions
+        column={1}
+        size="small"
+        bordered
+        labelStyle={{ fontWeight: 600, width: 140 }}
+      >
         <Descriptions.Item label="Payment ID">{payment.id}</Descriptions.Item>
         <Descriptions.Item label="Event">{payment.eventName}</Descriptions.Item>
         <Descriptions.Item label="User">{payment.user}</Descriptions.Item>
-        <Descriptions.Item label="Email">{payment.email || "—"}</Descriptions.Item>
+        <Descriptions.Item label="Email">
+          {payment.email || "—"}
+        </Descriptions.Item>
         <Descriptions.Item label="Method">
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
             {METHOD_ICONS[payment.method] || <CreditCardOutlined />}
@@ -140,22 +259,45 @@ function StatCard({ title, value, prefix, icon, color, subtitle }) {
         height: "100%",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <div>
-          <div style={{ fontSize: 13, color: "#888", marginBottom: 4, fontWeight: 500 }}>{title}</div>
+          <div
+            style={{
+              fontSize: 13,
+              color: "#888",
+              marginBottom: 4,
+              fontWeight: 500,
+            }}
+          >
+            {title}
+          </div>
           <div style={{ fontSize: 26, fontWeight: 900, color: "#1a1a2e" }}>
-            {prefix}{typeof value === "number" ? value.toLocaleString() : value}
+            {prefix}
+            {typeof value === "number" ? value.toLocaleString() : value}
           </div>
           {subtitle && (
-            <div style={{ fontSize: 12, color: "#aaa", marginTop: 4 }}>{subtitle}</div>
+            <div style={{ fontSize: 12, color: "#aaa", marginTop: 4 }}>
+              {subtitle}
+            </div>
           )}
         </div>
         <div
           style={{
-            width: 50, height: 50, borderRadius: 12,
+            width: 50,
+            height: 50,
+            borderRadius: 12,
             background: color + "18",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 22, color,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 22,
+            color,
           }}
         >
           {icon}
@@ -171,18 +313,19 @@ function Payments() {
   const reduxPayments = useSelector((state) => state.payment);
 
   // Use Redux data if available, else fall back to demo
-  const allPayments = Array.isArray(reduxPayments) && reduxPayments.length > 0
-    ? reduxPayments
-    : DEMO_PAYMENTS;
+  const allPayments =
+    Array.isArray(reduxPayments) && reduxPayments.length > 0
+      ? reduxPayments
+      : DEMO_PAYMENTS;
 
   // ── Filter state
-  const [search, setSearch]         = useState("");
-  const [statusFilter, setStatus]   = useState("all");
-  const [methodFilter, setMethod]   = useState("all");
-  const [dateRange, setDateRange]   = useState(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatus] = useState("all");
+  const [methodFilter, setMethod] = useState("all");
+  const [dateRange, setDateRange] = useState(null);
 
   // ── Modal state
-  const [detailPayment, setDetail]  = useState(null);
+  const [detailPayment, setDetail] = useState(null);
 
   // ── Derived / filtered list
   const filtered = useMemo(() => {
@@ -194,7 +337,9 @@ function Payments() {
         p.user?.toLowerCase().includes(q) ||
         p.eventName?.toLowerCase().includes(q) ||
         p.email?.toLowerCase().includes(q);
-      const matchStatus = statusFilter === "all" || p.status?.toLowerCase() === statusFilter.toLowerCase();
+      const matchStatus =
+        statusFilter === "all" ||
+        p.status?.toLowerCase() === statusFilter.toLowerCase();
       const matchMethod = methodFilter === "all" || p.method === methodFilter;
       const matchDate =
         !dateRange ||
@@ -205,12 +350,20 @@ function Payments() {
   }, [allPayments, search, statusFilter, methodFilter, dateRange]);
 
   // ── Stats
-  const totalRevenue    = allPayments.filter((p) => p.status === "Completed").reduce((s, p) => s + (p.amount || 0), 0);
-  const pendingAmount   = allPayments.filter((p) => p.status === "Pending").reduce((s, p) => s + (p.amount || 0), 0);
-  const refundedAmount  = allPayments.filter((p) => p.status === "Refunded").reduce((s, p) => s + (p.amount || 0), 0);
-  const completedCount  = allPayments.filter((p) => p.status === "Completed").length;
-  const pendingCount    = allPayments.filter((p) => p.status === "Pending").length;
-  const failedCount     = allPayments.filter((p) => p.status === "Failed").length;
+  const totalRevenue = allPayments
+    .filter((p) => p.status === "Completed")
+    .reduce((s, p) => s + (p.amount || 0), 0);
+  const pendingAmount = allPayments
+    .filter((p) => p.status === "Pending")
+    .reduce((s, p) => s + (p.amount || 0), 0);
+  const refundedAmount = allPayments
+    .filter((p) => p.status === "Refunded")
+    .reduce((s, p) => s + (p.amount || 0), 0);
+  const completedCount = allPayments.filter(
+    (p) => p.status === "Completed",
+  ).length;
+  const pendingCount = allPayments.filter((p) => p.status === "Pending").length;
+  const failedCount = allPayments.filter((p) => p.status === "Failed").length;
 
   // ── Handlers
   function handleDelete(payment) {
@@ -240,17 +393,6 @@ function Payments() {
   // ── Table columns
   const columns = [
     {
-      title: "Payment ID",
-      dataIndex: "id",
-      key: "id",
-      width: 130,
-      render: (id) => (
-        <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#1677ff", fontSize: 13 }}>
-          {id}
-        </span>
-      ),
-    },
-    {
       title: "Event",
       dataIndex: "eventName",
       key: "eventName",
@@ -263,7 +405,9 @@ function Payments() {
       render: (_, r) => (
         <div>
           <div style={{ fontWeight: 600, fontSize: 13 }}>{r.user}</div>
-          {r.email && <div style={{ fontSize: 11, color: "#aaa" }}>{r.email}</div>}
+          {r.email && (
+            <div style={{ fontSize: 11, color: "#aaa" }}>{r.email}</div>
+          )}
         </div>
       ),
     },
@@ -283,7 +427,15 @@ function Payments() {
       dataIndex: "method",
       key: "method",
       render: (m) => (
-        <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#555", fontSize: 13 }}>
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            color: "#555",
+            fontSize: 13,
+          }}
+        >
           {METHOD_ICONS[m] || <CreditCardOutlined />} {m}
         </span>
       ),
@@ -301,9 +453,9 @@ function Payments() {
       key: "status",
       filters: [
         { text: "Completed", value: "Completed" },
-        { text: "Pending",   value: "Pending"   },
-        { text: "Failed",    value: "Failed"    },
-        { text: "Refunded",  value: "Refunded"  },
+        { text: "Pending", value: "Pending" },
+        { text: "Failed", value: "Failed" },
+        { text: "Refunded", value: "Refunded" },
       ],
       onFilter: (value, record) => record.status === value,
       render: (status) => {
@@ -348,7 +500,11 @@ function Payments() {
                 <Button
                   size="small"
                   icon={<CheckCircleOutlined />}
-                  style={{ borderRadius: 6, borderColor: "#52c41a", color: "#52c41a" }}
+                  style={{
+                    borderRadius: 6,
+                    borderColor: "#52c41a",
+                    color: "#52c41a",
+                  }}
                 />
               </Popconfirm>
             </Tooltip>
@@ -367,7 +523,11 @@ function Payments() {
                 <Button
                   size="small"
                   icon={<CloseCircleOutlined />}
-                  style={{ borderRadius: 6, borderColor: "#faad14", color: "#faad14" }}
+                  style={{
+                    borderRadius: 6,
+                    borderColor: "#faad14",
+                    color: "#faad14",
+                  }}
                 />
               </Popconfirm>
             </Tooltip>
@@ -399,7 +559,9 @@ function Payments() {
     <div style={{ padding: "10px" }}>
       {/* ── Header */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "#1a1a2e" }}>
+        <h1
+          style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "#1a1a2e" }}
+        >
           Payments
         </h1>
         <p style={{ margin: "4px 0 0", color: "#888", fontSize: 14 }}>
@@ -453,10 +615,14 @@ function Payments() {
       {/* ── Status Summary badges */}
       <Row gutter={[12, 12]} style={{ marginBottom: 24 }}>
         {[
-          { label: "Completed", count: completedCount,                                              color: "#52c41a"  },
-          { label: "Pending",   count: pendingCount,                                                color: "#faad14"  },
-          { label: "Failed",    count: failedCount,                                                 color: "#f5222d"  },
-          { label: "Refunded",  count: allPayments.filter((p) => p.status === "Refunded").length,  color: "#8c8c8c"  },
+          { label: "Completed", count: completedCount, color: "#52c41a" },
+          { label: "Pending", count: pendingCount, color: "#faad14" },
+          { label: "Failed", count: failedCount, color: "#f5222d" },
+          {
+            label: "Refunded",
+            count: allPayments.filter((p) => p.status === "Refunded").length,
+            color: "#8c8c8c",
+          },
         ].map((s) => (
           <Col key={s.label}>
             <div
@@ -471,10 +637,14 @@ function Payments() {
                 boxShadow: "0 1px 6px rgba(0,0,0,0.05)",
                 cursor: "pointer",
               }}
-              onClick={() => setStatus(s.label === statusFilter ? "all" : s.label)}
+              onClick={() =>
+                setStatus(s.label === statusFilter ? "all" : s.label)
+              }
             >
               <Badge color={s.color} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#555" }}>{s.label}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#555" }}>
+                {s.label}
+              </span>
               <span
                 style={{
                   fontSize: 13,
@@ -494,7 +664,11 @@ function Payments() {
 
       {/* ── Filters */}
       <Card
-        style={{ borderRadius: 14, boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 20 }}
+        style={{
+          borderRadius: 14,
+          boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+          marginBottom: 20,
+        }}
         styles={{ body: { padding: "16px 20px" } }}
       >
         <Row gutter={[12, 12]} align="middle">
