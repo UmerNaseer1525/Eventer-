@@ -13,6 +13,7 @@
   - [Bookings](#bookings-api)
   - [Payments](#payments-api)
     - [Notifications](#notifications-api)
+  - [Analytics](#analytics-api)
 - [Error Handling](#error-handling)
 - [Important Notes](#important-notes)
 
@@ -1165,6 +1166,97 @@ DELETE /api/payments/:id
 {
   "message": "Payment deleted successfully"
 }
+```
+
+---
+
+
+### Analytics API
+
+#### Get Global Analytics
+
+```
+GET /api/analytics/
+```
+
+**Authentication:** Required (JWT Bearer token)
+
+**Description:** Retrieves comprehensive analytics data for all events, bookings, and payments across the platform.
+
+**Response:**
+
+```json
+{
+  "stats": {
+    "totalEvents": 15,
+    "totalBookings": 245,
+    "totalRevenue": 12500,
+    "totalPayments": 245,
+    "upcomingEvents": 5,
+    "ongoingEvents": 3,
+    "completedEvents": 6,
+    "cancelledEvents": 1
+  },
+  "timelineData": [
+    {
+      "month": "Jan '26",
+      "events": 2,
+      "bookings": 30,
+      "revenue": 1200
+    }
+  ],
+  "categoryBreakdown": [
+    {
+      "name": "Technology",
+      "value": 5
+    }
+  ],
+  "statusBreakdown": [
+    {
+      "name": "Upcoming",
+      "value": 5
+    }
+  ],
+  "topEvents": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Tech Conference 2026",
+      "category": "Technology",
+      "status": "Upcoming",
+      "bookings": 50,
+      "revenue": 2500
+    }
+  ],
+  "additionalMetrics": {
+    "avgBookingsPerEvent": 16.33,
+    "avgRevenuePerEvent": 833.33,
+    "avgRevenuePerBooking": 51.02,
+    "conversionRate": 0.07
+  }
+}
+```
+
+---
+
+#### Get Organizer Analytics
+
+```
+GET /api/analytics/organizer/:organizerId
+```
+
+**Authentication:** Required (JWT Bearer token)
+
+**Parameters:**
+
+- `organizerId` (URL param): Organizer's User ID
+
+**Description:** Retrieves analytics data specific to an event organizer's events, bookings, and payments.
+
+**Response:** Same structure as Global Analytics
+
+**Example:**
+```
+GET /api/analytics/organizer/507f1f77bcf86cd799439011
 ```
 
 ---
