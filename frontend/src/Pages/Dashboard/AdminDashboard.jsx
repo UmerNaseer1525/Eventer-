@@ -31,9 +31,11 @@ import {
   Avatar,
   Badge,
   Empty,
+  Spin,
 } from "antd";
-import { useSelector } from "react-redux";
-import { useMemo } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useEffect, useMemo } from "react";
+import { fetchAdminDashboard } from "../../Services/dashboardSlice";
 import { buildTimelineData } from "../../Components/Insights/insightUtils";
 import {
   getApprovedEvents,
@@ -437,91 +439,42 @@ function SystemAlert({ icon, message, type }) {
 
 // ── Main AdminDashboard ────────────────────────────────────────────────────────
 function AdminDashboard() {
-  const allEvents = useSelector((state) => state.event);
-  const allBookings = useSelector((state) => state.booking);
-  const allPayments = useSelector((state) => state.payment);
-  const allUsers = useSelector((state) => state.user);
+  const dispatch = useDispatch();
+  const dashboard = useSelector((state) => state.dashboard.admin);
+  const loading = useSelector((state) => state.dashboard.loading);
+  const error = useSelector((state) => state.dashboard.error);
 
-  const events = useMemo(() => getApprovedEvents(allEvents), [allEvents]);
-  const bookings = useMemo(
-    () => getPaidApprovedBookings(allBookings, events),
-    [allBookings, events],
-  );
-  const completedPayments = useMemo(
-    () => getCompletedApprovedPayments(allPayments, events),
-    [allPayments, events],
-  );
-  const users = useMemo(
-    () => (Array.isArray(allUsers) ? allUsers : []),
-    [allUsers],
-  );
+  useEffect(() => {
+    dispatch(fetchAdminDashboard());
+  }, [dispatch]);
+
+  const stats = dashboard?.stats || {};
+  const recentEvents = dashboard?.recentEvents || [];
+  const recentUsers = dashboard?.recentUsers || [];
 
   // ── Derived KPIs
-  const totalEvents = events.length;
-  const totalBookings = bookings.length;
-  const totalUsers = users.length;
-  const totalRevenue = getTotalRevenue(completedPayments, bookings);
+  const totalEvents = stats.totalEvents || 0;
+  const totalBookings = stats.totalBookings || 0;
+  const totalUsers = stats.totalUsers || 0;
+  const totalRevenue = stats.totalRevenue || 0;
 
-  const upcomingCount = events.filter(
-    (e) => e.status?.toLowerCase() === "upcoming",
-  ).length;
-  const ongoingCount = events.filter(
-    (e) => e.status?.toLowerCase() === "ongoing",
-  ).length;
-  const completedCount = events.filter(
-    (e) => e.status?.toLowerCase() === "completed",
-  ).length;
-  const cancelledCount = events.filter(
-    (e) => e.status?.toLowerCase() === "cancelled",
-  ).length;
+  const publishedEvents = stats.publishedEvents || 0;
+  const draftEvents = stats.draftEvents || 0;
+  const cancelledEvents = stats.cancelledEvents || 0;
 
-  const activeUsers = users.filter(
-    (u) => u.status?.toLowerCase() === "active",
-  ).length;
-  const inactiveUsers = users.filter(
-    (u) => u.status?.toLowerCase() === "inactive",
-  ).length;
-  const adminUsers = users.filter(
-    (u) => u.role?.toLowerCase() === "admin",
-  ).length;
+  const paidBookings = stats.paidBookings || 0;
+  const pendingBookings = stats.pendingBookings || 0;
 
-  const chartData = useMemo(() => {
-    const baseRows = buildTimelineData({
-      period: "monthly",
-      events,
-      bookings,
-      payments: completedPayments,
-    }).map((row) => ({ ...row, users: 0 }));
+  const successfulPayments = stats.successfulPayments || 0;
+  const failedPayments = stats.failedPayments || 0;
 
-    const currentYear = new Date().getFullYear();
-    users.forEach((user) => {
-      const rawDate = user?.joined ?? user?.createdAt ?? user?.date;
-      if (!rawDate) return;
-
-      const parsed = new Date(rawDate);
-      if (Number.isNaN(parsed.getTime())) return;
-      if (parsed.getFullYear() !== currentYear) return;
-      baseRows[parsed.getMonth()].users += 1;
-    });
-
-    return baseRows;
-  }, [events, bookings, completedPayments, users]);
-
-  const maxMonthlyEvents = Math.max(
-    1,
-    ...chartData.map((item) => Number(item.events) || 0),
-  );
-
-  // ── Category donut
+  // ── Category breakdown from backend
   const categorySegments = useMemo(() => {
-    const map = {};
-    events.forEach((e) => {
-      if (e.category) map[e.category] = (map[e.category] || 0) + 1;
-    });
-    return Object.keys(map).length > 0
-      ? Object.entries(map).map(([name, value], i) => ({
-          name,
-          value,
+    const catBreakdown = dashboard?.categoryBreakdown || [];
+    return catBreakdown.length > 0
+      ? catBreakdown.map(({ _id, count }, i) => ({
+          name: _id,
+          value: count,
           color: CAT_COLORS[i % CAT_COLORS.length],
         }))
       : [
@@ -531,105 +484,50 @@ function AdminDashboard() {
           { name: "Workshop", value: 10, color: C.orange },
           { name: "Other", value: 5, color: C.cyan },
         ];
-  }, [events]);
+  }, [dashboard?.categoryBreakdown]);
 
   // ── Status donut
   const statusSegments = [
-    { name: "Upcoming", value: upcomingCount, color: C.blue },
-    { name: "Ongoing", value: ongoingCount, color: C.green },
-    { name: "Completed", value: completedCount, color: C.cyan },
-    { name: "Cancelled", value: cancelledCount, color: C.red },
+    { name: "Published", value: publishedEvents, color: C.blue },
+    { name: "Draft", value: draftEvents, color: C.orange },
+    { name: "Cancelled", value: cancelledEvents, color: C.red },
   ];
 
-  // ── User role donut
-  const userRoleSegments = useMemo(() => {
-    if (users.length === 0) {
-      return [{ name: "Users", value: 0, color: C.blue }];
-    }
-    const map = {};
-    users.forEach((u) => {
-      const r = u.role || "User";
-      map[r] = (map[r] || 0) + 1;
-    });
-    return Object.entries(map).map(([name, value], i) => ({
-      name,
-      value,
-      color: CAT_COLORS[i % CAT_COLORS.length],
-    }));
-  }, [users]);
+  // ── Booking status segments
+  const bookingStatusSegments = [
+    { name: "Paid", value: paidBookings, color: C.green },
+    { name: "Pending", value: pendingBookings, color: C.gold },
+    { name: "Failed", value: stats.failedBookings || 0, color: C.red },
+  ];
 
   // ── Top events table data
   const tableData = useMemo(() => {
-    const bookingByEvent = new Map();
-    bookings.forEach((item) => {
-      const eventId = String(item?.eventId ?? "");
-      const eventTitle = String(item?.title ?? item?.name ?? "").toLowerCase();
-
-      if (eventId) {
-        bookingByEvent.set(eventId, (bookingByEvent.get(eventId) || 0) + 1);
-      }
-      if (eventTitle) {
-        bookingByEvent.set(
-          eventTitle,
-          (bookingByEvent.get(eventTitle) || 0) + 1,
-        );
-      }
-    });
-
-    const revenueByEvent = new Map();
-    completedPayments.forEach((item) => {
-      const eventId = String(item?.eventId ?? "");
-      const eventTitle = String(item?.eventName ?? "").toLowerCase();
-      const amount = Number(item?.amount) || 0;
-
-      if (eventId) {
-        revenueByEvent.set(
-          eventId,
-          (revenueByEvent.get(eventId) || 0) + amount,
-        );
-      }
-      if (eventTitle) {
-        revenueByEvent.set(
-          eventTitle,
-          (revenueByEvent.get(eventTitle) || 0) + amount,
-        );
-      }
-    });
-
-    return events
-      .map((event) => {
-        const idKey = String(event?.id ?? "");
-        const titleKey = String(
-          event?.title ?? event?.name ?? "",
-        ).toLowerCase();
-
-        return {
-          name: event.title || event.name || "—",
-          category: event.category || "—",
-          status: event.status || "—",
-          bookings:
-            (bookingByEvent.get(idKey) || 0) +
-            (bookingByEvent.get(titleKey) || 0),
-          revenue:
-            (revenueByEvent.get(idKey) || 0) +
-            (revenueByEvent.get(titleKey) || 0),
-        };
-      })
-      .sort((a, b) => b.revenue - a.revenue)
+    return recentEvents
+      .map((event, i) => ({
+        key: i,
+        name: event.title || event.name || "—",
+        category: event.category?.name || event.category || "—",
+        status: event.status || "—",
+        organizer:
+          event.organizer?.firstName + " " + event.organizer?.lastName || "—",
+        bookings: 0, // This would need to be aggregated from backend
+        revenue: 0, // This would need to be aggregated from backend
+      }))
       .slice(0, 5);
-  }, [events, bookings, completedPayments]);
+  }, [recentEvents]);
 
   // ── Recent users table data
-  const usersTableData = users.slice(0, 5).map((u) => ({
-    name: u.name || u.username || "—",
-    email: u.email || "—",
-    role: u.role || "User",
-    status: u.status || "Active",
-    bookings: u.bookings || 0,
-    joined: u.joined || "—",
-  }));
+  const usersTableData = useMemo(() => {
+    return recentUsers.slice(0, 5).map((u) => ({
+      name: u.firstName + " " + u.lastName || "—",
+      email: u.email || "—",
+      role: u.role || "User",
+      status: u.status || "Active",
+      joined: new Date(u.createdAt).toLocaleDateString(),
+    }));
+  }, [recentUsers]);
 
-  // ── Table columns: Top Events
+  // ── Table columns: Top Events (simplified)
   const eventColumns = [
     {
       title: "#",
@@ -655,6 +553,12 @@ function AdminDashboard() {
       ),
     },
     {
+      title: "Organizer",
+      dataIndex: "organizer",
+      key: "organizer",
+      render: (o) => <span style={{ fontSize: 13 }}>{o}</span>,
+    },
+    {
       title: "Status",
       dataIndex: "status",
       key: "status",
@@ -663,66 +567,17 @@ function AdminDashboard() {
         return (
           <Tag
             color={
-              sl === "upcoming"
+              sl === "published"
                 ? "blue"
-                : sl === "ongoing"
-                  ? "green"
+                : sl === "draft"
+                  ? "orange"
                   : sl === "cancelled"
                     ? "red"
                     : "default"
             }
-            icon={
-              sl === "upcoming" ? (
-                <ClockCircleOutlined />
-              ) : sl === "ongoing" ? (
-                <SyncOutlined spin />
-              ) : sl === "completed" ? (
-                <CheckCircleOutlined />
-              ) : (
-                <CloseCircleOutlined />
-              )
-            }
           >
             {s}
           </Tag>
-        );
-      },
-    },
-    {
-      title: "Bookings",
-      dataIndex: "bookings",
-      key: "bookings",
-      sorter: (a, b) => a.bookings - b.bookings,
-      render: (v) => (
-        <span style={{ fontWeight: 700, color: C.blue }}>{v}</span>
-      ),
-    },
-    {
-      title: "Revenue",
-      dataIndex: "revenue",
-      key: "revenue",
-      sorter: (a, b) => a.revenue - b.revenue,
-      render: (v) => (
-        <span style={{ fontWeight: 700, color: C.green }}>
-          ${v.toLocaleString()}
-        </span>
-      ),
-    },
-    {
-      title: "Fill Rate",
-      key: "fill",
-      render: (_, r) => {
-        const pct = Math.min(100, Math.round((r.bookings / 350) * 100));
-        return (
-          <div style={{ minWidth: 110 }}>
-            <Progress
-              percent={pct}
-              size="small"
-              strokeColor={pct > 70 ? C.green : pct > 40 ? C.gold : C.orange}
-              showInfo={false}
-            />
-            <span style={{ fontSize: 11, color: "#888" }}>{pct}% full</span>
-          </div>
         );
       },
     },
@@ -760,9 +615,7 @@ function AdminDashboard() {
         const rl = role?.toLowerCase();
         return (
           <Tag
-            color={
-              rl === "admin" ? "red" : rl === "moderator" ? "orange" : "blue"
-            }
+            color={rl === "admin" ? "red" : "blue"}
             icon={rl === "admin" ? <CrownOutlined /> : <UserOutlined />}
             style={{ fontWeight: 600 }}
           >
@@ -783,14 +636,6 @@ function AdminDashboard() {
       ),
     },
     {
-      title: "Bookings",
-      dataIndex: "bookings",
-      key: "bookings",
-      render: (v) => (
-        <span style={{ fontWeight: 700, color: C.purple }}>{v}</span>
-      ),
-    },
-    {
       title: "Joined",
       dataIndex: "joined",
       key: "joined",
@@ -800,522 +645,285 @@ function AdminDashboard() {
 
   return (
     <div style={{ padding: "10px" }}>
-      {/* ── Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: 24,
-          flexWrap: "wrap",
-          gap: 12,
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 26,
-              fontWeight: 800,
-              color: "#1a1a2e",
-            }}
-          >
-            Admin Dashboard
-          </h1>
-          <p style={{ margin: "4px 0 0", color: "#888", fontSize: 14 }}>
-            Full platform overview — events, users, revenue, and system health.
-          </p>
+      {/* ── Loading State */}
+      {loading && (
+        <div style={{ textAlign: "center", padding: "40px" }}>
+          <Spin size="large" />
+          <p style={{ marginTop: 16, color: "#888" }}>Loading dashboard...</p>
         </div>
-      </div>
+      )}
 
-      {/* ── KPI Row */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={12} sm={12} md={6}>
-          <StatCard
-            title="Total Events"
-            value={totalEvents}
-            icon={<CalendarOutlined />}
-            color={C.blue}
-            change={12.5}
-          />
-        </Col>
-        <Col xs={12} sm={12} md={6}>
-          <StatCard
-            title="Total Bookings"
-            value={totalBookings}
-            icon={<TeamOutlined />}
-            color={C.purple}
-            change={8.2}
-          />
-        </Col>
-        <Col xs={12} sm={12} md={6}>
-          <StatCard
-            title="Total Revenue"
-            value={totalRevenue}
-            prefix="$"
-            icon={<DollarOutlined />}
-            color={C.green}
-            change={23.5}
-          />
-        </Col>
-        <Col xs={12} sm={12} md={6}>
-          <StatCard
-            title="Registered Users"
-            value={totalUsers}
-            icon={<UserOutlined />}
-            color={C.orange}
-            change={6.8}
-          />
-        </Col>
-      </Row>
+      {/* ── Error State */}
+      {error && !loading && (
+        <Card
+          style={{
+            borderRadius: 14,
+            marginBottom: 20,
+            borderColor: "#ffccc7",
+            background: "#fff2f0",
+          }}
+        >
+          <Typography.Text style={{ color: "#cf1322", fontWeight: 600 }}>
+            {error}
+          </Typography.Text>
+        </Card>
+      )}
 
-      {/* ── Secondary KPI Row */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        {[
-          {
-            label: "Active Users",
-            value: activeUsers,
-            icon: "🟢",
-            color: C.green,
-          },
-          {
-            label: "Inactive Users",
-            value: inactiveUsers,
-            icon: "⚫",
-            color: "#aaa",
-          },
-          { label: "Admin Users", value: adminUsers, icon: "👑", color: C.red },
-          { label: "Growth Rate", value: "23.5%", icon: "📈", color: C.blue },
-          {
-            label: "Cancellation Rate",
-            value: `${Math.round((cancelledCount / (totalEvents || 1)) * 100)}%`,
-            icon: "❌",
-            color: C.orange,
-          },
-          {
-            label: "Completion Rate",
-            value: `${Math.round(((completedCount + ongoingCount) / (totalEvents || 1)) * 100)}%`,
-            icon: "✅",
-            color: C.cyan,
-          },
-        ].map((m) => (
-          <Col key={m.label} xs={12} sm={8} md={4}>
-            <Card
-              style={{
-                borderRadius: 14,
-                boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-                textAlign: "center",
-                border: `1px solid ${m.color}22`,
-              }}
-            >
-              <div style={{ fontSize: 26 }}>{m.icon}</div>
-              <div
+      {/* ── Main Content (only show if not loading) */}
+      {!loading && (
+        <>
+          {/* ── Header */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              marginBottom: 24,
+              flexWrap: "wrap",
+              gap: 12,
+            }}
+          >
+            <div>
+              <h1
                 style={{
-                  fontSize: 20,
-                  fontWeight: 900,
-                  color: m.color,
-                  margin: "6px 0 4px",
-                }}
-              >
-                {m.value}
-              </div>
-              <div style={{ fontSize: 11, color: "#888" }}>{m.label}</div>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      {/* ── Revenue Bar + User Growth Line */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} lg={12}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-            }}
-          >
-            <SectionHeader
-              icon={<BarChartOutlined />}
-              title="Revenue"
-              subtitle="This year (monthly)"
-            />
-            <BarChartAnt data={chartData} dataKey="revenue" color={C.blue} />
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-            }}
-          >
-            <SectionHeader
-              icon={<LineChartOutlined />}
-              title="User Growth"
-              subtitle="This year (monthly)"
-            />
-            <LineChartAnt data={chartData} dataKey="users" color={C.orange} />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* ── Bookings Trend + Events Created */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} lg={12}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-            }}
-          >
-            <SectionHeader
-              icon={<LineChartOutlined />}
-              title="Bookings Trend"
-              subtitle="This year (monthly)"
-            />
-            <LineChartAnt
-              data={chartData}
-              dataKey="bookings"
-              color={C.purple}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-            }}
-          >
-            <SectionHeader
-              icon={<BarChartOutlined />}
-              title="Events Created"
-              subtitle="This year (monthly)"
-            />
-            <BarChartAnt data={chartData} dataKey="events" color={C.green} />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* ── Donut Charts Row */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} md={8}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-              height: "100%",
-            }}
-          >
-            <SectionHeader
-              icon={<PieChartOutlined />}
-              title="Events by Category"
-              subtitle="Distribution across types"
-            />
-            <DonutChart segments={categorySegments} />
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-              height: "100%",
-            }}
-          >
-            <SectionHeader
-              icon={<PieChartOutlined />}
-              title="Events by Status"
-              subtitle="Current status breakdown"
-            />
-            <DonutChart segments={statusSegments} />
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-              height: "100%",
-            }}
-          >
-            <SectionHeader
-              icon={<PieChartOutlined />}
-              title="Users by Role"
-              subtitle="Platform role distribution"
-            />
-            <DonutChart segments={userRoleSegments} />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* ── Revenue & Events Progress Bars */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} md={12}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-            }}
-          >
-            <SectionHeader
-              icon={<FireOutlined />}
-              title="Revenue vs Target"
-              subtitle="Monthly revenue vs target ($15k)"
-            />
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {chartData.map((d) => {
-                const pct = Math.min(
-                  100,
-                  Math.round((d.revenue / 15000) * 100),
-                );
-                return (
-                  <div
-                    key={d.month}
-                    style={{ display: "flex", alignItems: "center", gap: 12 }}
-                  >
-                    <span
-                      style={{
-                        width: 32,
-                        fontSize: 12,
-                        color: "#888",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {d.month}
-                    </span>
-                    <Progress
-                      percent={pct}
-                      showInfo={false}
-                      strokeColor={
-                        pct >= 100 ? C.green : pct >= 60 ? C.blue : C.gold
-                      }
-                      trailColor="#f5f5f5"
-                      style={{ flex: 1, marginBottom: 0 }}
-                    />
-                    <span
-                      style={{
-                        width: 44,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: "#555",
-                        textAlign: "right",
-                      }}
-                    >
-                      ${(d.revenue / 1000).toFixed(1)}k
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} md={12}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-            }}
-          >
-            <SectionHeader
-              icon={<BarChartOutlined />}
-              title="Monthly Events Created"
-              subtitle="New events added per month"
-            />
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {chartData.map((d) => (
-                <div
-                  key={d.month}
-                  style={{ display: "flex", alignItems: "center", gap: 12 }}
-                >
-                  <span
-                    style={{
-                      width: 32,
-                      fontSize: 12,
-                      color: "#888",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {d.month}
-                  </span>
-                  <Progress
-                    percent={Math.round(
-                      ((Number(d.events) || 0) / maxMonthlyEvents) * 100,
-                    )}
-                    showInfo={false}
-                    strokeColor={C.orange}
-                    trailColor="#f5f5f5"
-                    style={{ flex: 1, marginBottom: 0 }}
-                  />
-                  <span
-                    style={{
-                      width: 20,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: C.orange,
-                    }}
-                  >
-                    {d.events}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* ── Top Events Table */}
-      <Card
-        style={{
-          borderRadius: 14,
-          boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-          marginBottom: 24,
-        }}
-      >
-        <SectionHeader
-          icon={<TrophyOutlined />}
-          title="Top Performing Events"
-          subtitle="Ranked by bookings and revenue"
-        />
-        <Table
-          dataSource={tableData}
-          columns={eventColumns}
-          rowKey={(r, i) => r.name + i}
-          pagination={false}
-          size="middle"
-          scroll={{ x: 700 }}
-        />
-      </Card>
-
-      {/* ── Users Table + System Alerts */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={16}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-            }}
-          >
-            <SectionHeader
-              icon={<UserOutlined />}
-              title="Recent Users"
-              subtitle="Latest registered platform users"
-            />
-            <Table
-              dataSource={usersTableData}
-              columns={userColumns}
-              rowKey={(r, i) => r.email + i}
-              pagination={false}
-              size="middle"
-              scroll={{ x: 500 }}
-            />
-          </Card>
-        </Col>
-
-        <Col xs={24} lg={8}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-              height: "100%",
-            }}
-          >
-            <SectionHeader
-              icon={<AlertOutlined />}
-              title="System Alerts"
-              subtitle="Platform health & notices"
-            />
-            <SystemAlert
-              icon={<CheckCircleOutlined />}
-              message="All services are running normally."
-              type="success"
-            />
-            <SystemAlert
-              icon={<AlertOutlined />}
-              message={`${cancelledCount} event(s) cancelled this period.`}
-              type="warning"
-            />
-            <SystemAlert
-              icon={<UserOutlined />}
-              message={`${inactiveUsers} user account(s) are inactive.`}
-              type="info"
-            />
-            <SystemAlert
-              icon={<SettingOutlined />}
-              message="Scheduled maintenance: Sunday 2:00 AM."
-              type="info"
-            />
-            {cancelledCount > 10 && (
-              <SystemAlert
-                icon={<CloseCircleOutlined />}
-                message="High cancellation rate detected. Review events."
-                type="error"
-              />
-            )}
-
-            {/* ── Platform Health Meters */}
-            <div style={{ marginTop: 20 }}>
-              <div
-                style={{
-                  fontWeight: 700,
-                  fontSize: 13,
+                  margin: 0,
+                  fontSize: 26,
+                  fontWeight: 800,
                   color: "#1a1a2e",
-                  marginBottom: 14,
                 }}
               >
-                Platform Health
-              </div>
-              {[
-                { label: "Uptime", value: 99, color: C.green },
-                { label: "API Response", value: 87, color: C.blue },
-                { label: "DB Load", value: 42, color: C.orange },
-                { label: "Cache Hit", value: 76, color: C.purple },
-              ].map((m) => (
-                <div
-                  key={m.label}
+                Admin Dashboard
+              </h1>
+              <p style={{ margin: "4px 0 0", color: "#888", fontSize: 14 }}>
+                Full platform overview — events, users, revenue, and system
+                health.
+              </p>
+            </div>
+          </div>
+
+          {/* ── KPI Row */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={12} sm={12} md={6}>
+              <StatCard
+                title="Total Events"
+                value={totalEvents}
+                icon={<CalendarOutlined />}
+                color={C.blue}
+              />
+            </Col>
+            <Col xs={12} sm={12} md={6}>
+              <StatCard
+                title="Total Bookings"
+                value={totalBookings}
+                icon={<TeamOutlined />}
+                color={C.purple}
+              />
+            </Col>
+            <Col xs={12} sm={12} md={6}>
+              <StatCard
+                title="Total Revenue"
+                value={totalRevenue}
+                prefix="$"
+                icon={<DollarOutlined />}
+                color={C.green}
+              />
+            </Col>
+            <Col xs={12} sm={12} md={6}>
+              <StatCard
+                title="Registered Users"
+                value={totalUsers}
+                icon={<UserOutlined />}
+                color={C.orange}
+              />
+            </Col>
+          </Row>
+
+          {/* ── Secondary KPI Row */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            {[
+              {
+                label: "Published Events",
+                value: publishedEvents,
+                icon: "📅",
+                color: C.blue,
+              },
+              {
+                label: "Draft Events",
+                value: draftEvents,
+                icon: "📝",
+                color: C.orange,
+              },
+              {
+                label: "Cancelled Events",
+                value: cancelledEvents,
+                icon: "❌",
+                color: C.red,
+              },
+              {
+                label: "Paid Bookings",
+                value: paidBookings,
+                icon: "✅",
+                color: C.green,
+              },
+              {
+                label: "Pending Bookings",
+                value: pendingBookings,
+                icon: "⏳",
+                color: C.gold,
+              },
+              {
+                label: "Successful Payments",
+                value: successfulPayments,
+                icon: "💰",
+                color: C.cyan,
+              },
+            ].map((m) => (
+              <Col key={m.label} xs={12} sm={8} md={4}>
+                <Card
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    marginBottom: 10,
+                    borderRadius: 14,
+                    boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                    textAlign: "center",
+                    border: `1px solid ${m.color}22`,
                   }}
                 >
-                  <span
+                  <div style={{ fontSize: 26 }}>{m.icon}</div>
+                  <div
                     style={{
-                      width: 90,
-                      fontSize: 12,
-                      color: "#555",
-                      flexShrink: 0,
+                      fontSize: 20,
+                      fontWeight: 900,
+                      color: m.color,
+                      margin: "6px 0 4px",
                     }}
                   >
-                    {m.label}
-                  </span>
-                  <Progress
-                    percent={m.value}
-                    showInfo={false}
-                    strokeColor={
-                      m.value > 70 ? C.green : m.value > 40 ? m.color : C.red
-                    }
-                    trailColor="#f5f5f5"
-                    style={{ flex: 1, marginBottom: 0 }}
+                    {m.value}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#888" }}>{m.label}</div>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+
+          {/* ── Category Breakdown */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24} md={12}>
+              <Card
+                style={{
+                  borderRadius: 14,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                  height: "100%",
+                }}
+              >
+                <SectionHeader
+                  icon={<PieChartOutlined />}
+                  title="Events by Category"
+                  subtitle="Distribution"
+                />
+                {categorySegments.length === 0 ? (
+                  <Empty description="No data" />
+                ) : (
+                  <DonutChart segments={categorySegments} />
+                )}
+              </Card>
+            </Col>
+            <Col xs={24} md={12}>
+              <Card
+                style={{
+                  borderRadius: 14,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                  height: "100%",
+                }}
+              >
+                <SectionHeader
+                  icon={<FireOutlined />}
+                  title="Event Status"
+                  subtitle="Current breakdown"
+                />
+                {statusSegments.length === 0 ? (
+                  <Empty description="No data" />
+                ) : (
+                  <DonutChart segments={statusSegments} />
+                )}
+              </Card>
+            </Col>
+          </Row>
+
+          {/* ── Booking Status */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24}>
+              <Card
+                style={{
+                  borderRadius: 14,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                }}
+              >
+                <SectionHeader
+                  icon={<TrophyOutlined />}
+                  title="Booking Status"
+                  subtitle="Payment distribution"
+                />
+                {bookingStatusSegments.length === 0 ? (
+                  <Empty description="No data" />
+                ) : (
+                  <DonutChart segments={bookingStatusSegments} />
+                )}
+              </Card>
+            </Col>
+          </Row>
+
+          {/* ── Recent Events + Users Tables */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24} lg={12}>
+              <Card
+                style={{
+                  borderRadius: 14,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                }}
+              >
+                <SectionHeader
+                  icon={<CalendarOutlined />}
+                  title="Recent Events"
+                  subtitle="Latest 5 events"
+                />
+                {tableData.length === 0 ? (
+                  <Empty description="No events" />
+                ) : (
+                  <Table
+                    columns={eventColumns}
+                    dataSource={tableData}
+                    pagination={false}
+                    size="small"
                   />
-                  <span
-                    style={{
-                      width: 34,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "#555",
-                      textAlign: "right",
-                    }}
-                  >
-                    {m.value}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </Col>
-      </Row>
+                )}
+              </Card>
+            </Col>
+            <Col xs={24} lg={12}>
+              <Card
+                style={{
+                  borderRadius: 14,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                }}
+              >
+                <SectionHeader
+                  icon={<UserOutlined />}
+                  title="Recent Users"
+                  subtitle="Latest 5 registrations"
+                />
+                {usersTableData.length === 0 ? (
+                  <Empty description="No users" />
+                ) : (
+                  <Table
+                    columns={userColumns}
+                    dataSource={usersTableData}
+                    pagination={false}
+                    size="small"
+                  />
+                )}
+              </Card>
+            </Col>
+          </Row>
+        </>
+      )}
     </div>
   );
 }
