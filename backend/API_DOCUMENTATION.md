@@ -12,6 +12,7 @@
   - [Events](#events-api)
   - [Bookings](#bookings-api)
   - [Payments](#payments-api)
+    - [Notifications](#notifications-api)
 - [Error Handling](#error-handling)
 - [Important Notes](#important-notes)
 
@@ -52,7 +53,8 @@ Response:
     "categories": "/api/categories",
     "events": "/api/events",
     "bookings": "/api/bookings",
-    "payments": "/api/payments"
+    "payments": "/api/payments",
+    "notifications": "/api/notifications"
   }
 }
 ```
@@ -954,6 +956,95 @@ POST /api/payments
   "message": "Payment created successfully",
   "paymentId": "507f1f77bcf86cd799439011"
 }
+```
+
+---
+
+### Notifications API
+
+#### Notification Model
+
+```javascript
+{
+  _id: ObjectId,
+  recipient: ObjectId,        // Optional, References User._id
+  target: String,             // Required default: "user", enum: ["admin", "user", "all"]
+  type: String,               // Required, enum: ["booking", "event", "payment", "warning", "cancelled", "user", "info"]
+  category: String,           // Required
+  title: String,              // Required
+  message: String,            // Required
+  relatedId: ObjectId,        // Optional
+  relatedModel: String,       // Optional
+  read: Boolean,              // Default: false
+  readAt: Date,               // Optional
+  createdAt: Date             // Auto-generated
+}
+```
+
+#### Get All Notifications
+
+```
+GET /api/notifications
+```
+
+#### Get Notification by ID
+
+```
+GET /api/notifications/:id
+```
+
+#### Get Notifications by Target
+
+```
+GET /api/notifications/target/:target
+```
+
+#### Get Notifications by Recipient
+
+```
+GET /api/notifications/recipient/:recipientId
+```
+
+#### Get Unread Notifications by Recipient
+
+```
+GET /api/notifications/recipient/:recipientId/unread
+```
+
+#### Create Notification
+
+```
+POST /api/notifications
+```
+
+#### Update Notification
+
+```
+PUT /api/notifications/:id
+```
+
+#### Mark Notification as Read
+
+```
+PUT /api/notifications/:id/read
+```
+
+#### Mark All Notifications as Read
+
+```
+PUT /api/notifications/recipient/:recipientId/read-all
+```
+
+#### Delete Notification
+
+```
+DELETE /api/notifications/:id
+```
+
+#### Delete Notifications by Recipient
+
+```
+DELETE /api/notifications/recipient/:recipientId
 ```
 
 ---
