@@ -158,35 +158,40 @@ Response:
 GET /api/users
 ```
 
+**Authentication:** Required (JWT Bearer token)
+
 **Response:** Array of all users
 
 ---
 
-#### Get User by email
+#### Get User by Email
 
 ```
 GET /api/users/:email
 ```
 
-#### Get User by email
-
-```
-GET /api/users/:id
-```
+**Authentication:** Required (JWT Bearer token)
 
 **Parameters:**
 
-- `id` (URL param): User ID
+- `email` (URL param): User email
 
 **Response:** Single user object or 404 if not found
 
+**Example:**
+```
+GET /api/users/john@example.com
+```
+
 ---
 
-#### Create User
+#### Create User (Register)
 
 ```
 POST /api/users
 ```
+
+**Authentication:** Not required
 
 **Request Body:**
 
@@ -196,34 +201,126 @@ POST /api/users
   "lastName": "Doe",
   "email": "john@example.com",
   "password": "securePassword123",
-  "role": "attendee",
-  "phone": "1234567890",
-  "profileImage": "https://example.com/image.jpg"
+  "username": "johndoe",
+  "role": "attendee"
 }
 ```
 
-**Required Fields:** firstName, lastName, email, password, role
+**Required Fields:** firstName, lastName, email, password, username, role
+
+**Optional Fields:** phone, profileImage
 
 **Response:**
 
 ```json
 {
   "message": "User created successfully",
-  "userId": "507f1f77bcf86cd799439011"
+  "userId": "507f1f77bcf86cd799439011",
+  "profileImage": "/uploads/image.jpg"
 }
 ```
+
+---
+
+#### Login User
+
+```
+POST /api/users/login
+```
+
+**Authentication:** Not required
+
+**Request Body:**
+
+```json
+{
+  "email": "john@example.com",
+  "password": "securePassword123"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Login Successfully",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "507f1f77bcf86cd799439011",
+    "email": "john@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "role": "attendee"
+  }
+}
+```
+
+---
+
+#### Update User Profile (Settings)
+
+```
+PUT /api/users/:email
+```
+
+**Authentication:** Required (JWT Bearer token)
+
+**Parameters:**
+
+- `email` (URL param): User email to update
+
+**Request:** Multipart Form Data
+
+```
+Fields:
+- firstName: String (Optional)
+- lastName: String (Optional)
+- username: String (Optional)
+- phone: String (Optional)
+- password: String (Optional)
+- profileImage: File (Optional, image file)
+- status: String (Optional, "active" or "blocked")
+```
+
+**Response:**
+
+```json
+{
+  "message": "User updated successfully",
+  "user": {
+    "_id": "507f1f77bcf86cd799439011",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com",
+    "username": "johndoe",
+    "phone": "1234567890",
+    "profileImage": "/uploads/1234567890-profile.jpg",
+    "role": "attendee",
+    "status": "active"
+  }
+}
+```
+
+**Notes:**
+- Only provided fields will be updated
+- Password is automatically hashed
+- Profile image must be JPEG or PNG
+- Only authenticated users can update their own profile
+- Admin can update other users' profiles
 
 ---
 
 #### Delete User
 
 ```
-DELETE /api/users/:id
+DELETE /api/users/:email
 ```
+
+**Authentication:** Required (JWT Bearer token)
 
 **Parameters:**
 
-- `id` (URL param): User ID
+- `email` (URL param): User email to delete
 
 **Response:**
 
@@ -235,88 +332,31 @@ DELETE /api/users/:id
 
 ---
 
-#### Update User Password
-
-```
-PUT /api/users/:id/password
-```
-
-**Request Body:**
-
-```json
-{
-  "password": "newPassword123"
-}
-```
-
----
-
-#### Update User Profile Image
-
-```
-PUT /api/users/:id/profile-image
-```
-
-**Request Body:**
-
-```json
-{
-  "profileImage": "https://example.com/new-image.jpg"
-}
-```
-
----
-
 #### Update User Status
 
 ```
-PUT /api/users/:id/status
+PUT /api/users/:email/status
 ```
 
-**Request Body:**
+**Authentication:** Required (JWT Bearer token)
+
+**Parameters:**
+
+- `email` (URL param): User email
+- `status` (Query param): "active" or "blocked"
+
+**Example:**
+```
+PUT /api/users/john@example.com/status?status=blocked
+```
+
+**Response:**
 
 ```json
 {
-  "status": "blocked"
+  "message": "Status updated successfully"
 }
 ```
-
-**Valid Values:** "active", "blocked"
-
----
-
-#### Update User Phone
-
-```
-PUT /api/users/:id/phone
-```
-
-**Request Body:**
-
-```json
-{
-  "phone": "9876543210"
-}
-```
-
----
-
-#### Update User Name
-
-```
-PUT /api/users/:id/name
-```
-
-**Request Body:**
-
-```json
-{
-  "firstName": "Jane",
-  "lastName": "Smith"
-}
-```
-
-**Note:** You can update one or both fields
 
 ---
 
