@@ -124,10 +124,10 @@ const updateStatus = async (req, res) => {
       });
     }
     const result = await eventService.updateStatus(id, status);
-    if (result.matchedCount === 0) {
+    if (!result) {
       return res.status(404).json({ message: "Event not found" });
     }
-    res.status(200).json({ message: "Event status updated successfully" });
+    res.status(200).json({ message: "Event status updated successfully", event: result });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

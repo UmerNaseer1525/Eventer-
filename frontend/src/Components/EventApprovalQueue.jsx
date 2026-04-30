@@ -11,12 +11,8 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
 import EditEvent from "./EditEvent";
-import { updateApprovedStatus } from "../Services/eventSlice";
+import { resetApprovalAsync } from "../Services/eventSlice";
 import { addRequest } from "../Services/requestSlice";
-import {
-  isEventInApprovalQueue,
-  normalizeApprovalStatus,
-} from "../utils/eventApproval";
 
 function EventApprovalQueue({ open, onClose }) {
   const pendingEvents = useSelector((state) => state.event.pendingAprovalEvents);
@@ -29,9 +25,13 @@ function EventApprovalQueue({ open, onClose }) {
     ...(Array.isArray(rejectedEvents) ? rejectedEvents : []),
   ];
 
-  const queue = allPendingAndRejected.filter(
-    (event) => event && isEventInApprovalQueue(event)
-  );
+  const queue = allPendingAndRejected.filter((event) => {
+    if (!event) {
+      return false;
+    }
+    const value = String(event?.isApproved ?? "").toLowerCase();
+    return value === "" || value === "pending" || value === "rejected";
+  });
 
   const handleRequestAgain = (eventId) => {
     dispatch(
@@ -41,7 +41,7 @@ function EventApprovalQueue({ open, onClose }) {
         status: "pending",
       }),
     );
-    dispatch(updateApprovedStatus({ id: eventId }));
+    dispatch(resetApprovalAsync(eventId));
   };
 
   return (
@@ -60,7 +60,13 @@ function EventApprovalQueue({ open, onClose }) {
             itemLayout="vertical"
             dataSource={queue}
             renderItem={(event) => {
-              const approvalStatus = normalizeApprovalStatus(event);
+              const value = String(event?.isApproved ?? "").toLowerCase();
+              const approvalStatus =
+                value === "rejected"
+                  ? "Rejected"
+                  : value === "approved" || value === "true"
+                    ? "Approved"
+                    : "Pending";
 
               return (
                 <List.Item key={event._id}>

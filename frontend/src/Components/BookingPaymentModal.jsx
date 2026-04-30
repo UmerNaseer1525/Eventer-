@@ -85,7 +85,7 @@ function BookingPaymentModal({ booking, open, onClose, onSuccess }) {
                 Booking
               </div>
               <div style={{ fontWeight: 700, fontSize: 14, color: "#1a1a2e" }}>
-                {booking.name}
+                {booking.event.title}
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
@@ -93,7 +93,7 @@ function BookingPaymentModal({ booking, open, onClose, onSuccess }) {
                 Total Amount
               </div>
               <div style={{ fontSize: 28, fontWeight: 900, color: "#1677ff" }}>
-                ${booking.amount}
+                ${booking.totalPrice}
               </div>
             </div>
           </div>

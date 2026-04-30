@@ -23,16 +23,15 @@ import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import CreateEvent from "../../Components/CreateEvent";
 import EditEvent from "../../Components/EditEvent";
-import { deleteEvent, updateStatus } from "../../Services/eventSlice";
+import { deleteEventAsync, getAllEvents, updateEventStatusAsync } from "../../Services/eventSlice";
 import Event_Detail from "../../Components/Event_Detail";
 import EventApprovalQueue from "../../Components/EventApprovalQueue";
+import { useEffect } from "react";
 
 function MyEvents() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const [approvalFilter, setApprovalFilter] = useState("all");
   const eventsData = useSelector((state) => state.event.eventsData);
-  const rejectedEvents = useSelector((state) => state.event.rejectedEvents);
   const dispatch = useDispatch();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -43,6 +42,9 @@ function MyEvents() {
   const [isEventApprovalQueueOpen, setIsEventApprovalQueueOpen] =
     useState(false);
 
+    useEffect(() => {
+        dispatch(getAllEvents());
+      }, [dispatch]);
   function onSearchFilter(e) {
     setSearch(e.target.value);
   }
@@ -51,21 +53,12 @@ function MyEvents() {
     setStatus(e.target.value);
   }
 
-  function onApprovalFilter(e) {
-    setApprovalFilter(e.target.value);
-  }
-
   function handleStatusChange(eventId, value) {
-    dispatch(updateStatus({ id: eventId, status: value }));
+    console.log(eventId, value)
+    dispatch(updateEventStatusAsync({ id: eventId, status: value }));
   }
 
-  // Combine approved and rejected events
-  const allEvents = [
-    ...((Array.isArray(eventsData) ? eventsData : []).map(e => ({ ...e, isApproved: 'approved' }))),
-    ...((Array.isArray(rejectedEvents) ? rejectedEvents : []).map(e => ({ ...e, isApproved: 'rejected' }))),
-  ];
-
-  const filteredEvents = allEvents
+  const filteredEvents = (Array.isArray(eventsData) ? eventsData : [])
     .filter(
       (event) =>
         event &&
@@ -81,9 +74,7 @@ function MyEvents() {
         .includes(search.toLowerCase());
       const matchesStatus =
         status === "all" ? true : event.status.toLowerCase() === status;
-      const matchesApproval =
-        approvalFilter === "all" ? true : event.isApproved === approvalFilter;
-      return matchesTitle && matchesStatus && matchesApproval;
+      return matchesTitle && matchesStatus;
     });
 
   return (
@@ -118,40 +109,23 @@ function MyEvents() {
           />
         </Col>
         <Col xs={24} md={16} lg={18}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <Radio.Group
-              value={status}
-              onChange={onStatusFilter}
-              size="large"
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "8px",
-                width: "100%",
-              }}
-            >
-              <Radio.Button value={"all"}>All</Radio.Button>
-              <Radio.Button value={"upcoming"}>Upcoming</Radio.Button>
-              <Radio.Button value={"completed"}>Completed</Radio.Button>
-              <Radio.Button value={"ongoing"}>Ongoing</Radio.Button>
-              <Radio.Button value={"cancelled"}>Cancelled</Radio.Button>
-            </Radio.Group>
-            <Radio.Group
-              value={approvalFilter}
-              onChange={onApprovalFilter}
-              size="large"
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "8px",
-                width: "100%",
-              }}
-            >
-              <Radio.Button value={"all"}>All Approval Status</Radio.Button>
-              <Radio.Button value={"approved"}>Approved</Radio.Button>
-              <Radio.Button value={"rejected"}>Rejected</Radio.Button>
-            </Radio.Group>
-          </div>
+          <Radio.Group
+            value={status}
+            onChange={onStatusFilter}
+            size="large"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "8px",
+              width: "100%",
+            }}
+          >
+            <Radio.Button value={"all"}>All</Radio.Button>
+            <Radio.Button value={"upcoming"}>Upcoming</Radio.Button>
+            <Radio.Button value={"completed"}>Completed</Radio.Button>
+            <Radio.Button value={"ongoing"}>Ongoing</Radio.Button>
+            <Radio.Button value={"cancelled"}>Cancelled</Radio.Button>
+          </Radio.Group>
         </Col>
       </Row>
       <Row gutter={[24, 24]}>
@@ -258,7 +232,7 @@ function MyEvents() {
                       title="Delete Event"
                       description="Are You Sure?"
                       onConfirm={() => {
-                        dispatch(deleteEvent({ id: event._id }));
+                        dispatch(deleteEventAsync(event._id));
                       }}
                       okText="Delete"
                       canelText="No"
@@ -289,21 +263,16 @@ function MyEvents() {
                     <span style={{ fontWeight: 600, fontSize: 18 }}>
                       {event.title}
                     </span>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <Tag color={event.isApproved === 'approved' ? 'green' : 'red'}>
-                        {event.isApproved === 'approved' ? 'Approved' : 'Rejected'}
-                      </Tag>
-                      <Select
-                        defaultValue={event.status}
-                        onChange={(value) => handleStatusChange(event._id, value)}
-                        options={[
-                          { label: "Upcoming", value: "upcoming" },
-                          { label: "Ongoing", value: "ongoing" },
-                          { label: "Cancelled", value: "cancelled" },
-                          { label: "Completed", value: "completed" },
-                        ]}
-                      />
-                    </div>
+                    <Select
+                      value={String(event.status || "").toLowerCase()}
+                      onChange={(value) => handleStatusChange(event._id, value)}
+                      options={[
+                        { label: "Upcoming", value: "upcoming" },
+                        { label: "Ongoing", value: "ongoing" },
+                        { label: "Cancelled", value: "cancelled" },
+                        { label: "Completed", value: "completed" },
+                      ]}
+                    />
                   </div>
                   <div style={{ marginBottom: 4, color: "#555" }}>
                     <b>Location:</b> {event.location}

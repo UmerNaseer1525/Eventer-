@@ -1,5 +1,3 @@
-import { normalizeRole } from "../utils/auth";
-
 const LOGIN_URL = "http://localhost:3000/api/users/login";
 const USERS_URL = "http://localhost:3000/api/users";
 
@@ -26,7 +24,10 @@ async function validateUser(data) {
 
       let mergedUser = {
         ...result.user,
-        role: normalizeRole(result?.user?.role),
+        role:
+          String(result?.user?.role || "").toLowerCase() === "admin"
+            ? "admin"
+            : "user",
       };
 
       if (mergedUser?.email) {
@@ -45,7 +46,11 @@ async function validateUser(data) {
           mergedUser = {
             ...mergedUser,
             status: profile?.status || mergedUser?.status || "active",
-            role: normalizeRole(profile?.role || mergedUser?.role),
+            role:
+              String(profile?.role || mergedUser?.role || "").toLowerCase() ===
+              "admin"
+                ? "admin"
+                : "user",
           };
         }
       }

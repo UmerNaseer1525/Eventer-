@@ -8,8 +8,11 @@ const STATUS_COLOR = {
 };
 
 function BookingCard({ booking, onDetail, onCancelSeat }) {
-  const canCancelSeat =
-    booking.status !== "Cancelled" && booking.status !== "Completed";
+  const event = booking.event;
+  const organizer = event.organizer;
+  
+  const paymentStatus = booking.paymentStatus === "paid" ? "Paid" : booking.paymentStatus === "pending" ? "Pending" : "Failed";
+  const canCancelSeat = booking.paymentStatus !== "failed" && event.status !== "Completed";
 
   return (
     <Card
@@ -24,8 +27,8 @@ function BookingCard({ booking, onDetail, onCancelSeat }) {
       cover={
         <div style={{ position: "relative" }}>
           <img
-            alt={booking.name}
-            src={booking.cover}
+            alt={event.title}
+            src={event.bannerImage}
             style={{
               height: 180,
               objectFit: "cover",
@@ -46,7 +49,7 @@ function BookingCard({ booking, onDetail, onCancelSeat }) {
               padding: "2px 12px",
             }}
           >
-            {booking.category}
+            {event.category}
           </Tag>
         </div>
       }
@@ -88,23 +91,25 @@ function BookingCard({ booking, onDetail, onCancelSeat }) {
           marginBottom: 8,
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 18 }}>{booking.name}</span>
+        <span style={{ fontWeight: 600, fontSize: 18 }}>
+          {event.title}
+        </span>
         <Tag
-          color={STATUS_COLOR[booking.status] || "default"}
+          color={paymentStatus === "Paid" ? "green" : paymentStatus === "Pending" ? "orange" : "red"}
           style={{ fontWeight: 500, fontSize: 13, borderRadius: 6 }}
         >
-          {booking.status}
+          {paymentStatus}
         </Tag>
       </div>
 
       <div style={{ marginBottom: 4, color: "#555" }}>
-        <b>Location:</b> {booking.location}
+        <b>Location:</b> {event.location}
       </div>
       <div style={{ marginBottom: 4, color: "#555" }}>
-        <b>Organized By:</b> {booking.organizer ?? "Unknown"}
+        <b>Organized By:</b> {organizer.firstName} {organizer.lastName}
       </div>
       <div style={{ marginBottom: 12, color: "#555" }}>
-        <b>Amount:</b> ${booking.amount}
+        <b>Amount:</b> ${booking.totalPrice}
       </div>
     </Card>
   );

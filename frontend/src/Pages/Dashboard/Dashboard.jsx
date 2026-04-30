@@ -33,9 +33,6 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect, useMemo } from "react";
 import { fetchUserDashboard } from "../../Services/dashboardSlice";
-import { getStoredUser } from "../../utils/auth";
-import {
-} from "../../utils/insightScope";
 
 const { Text, Title } = Typography;
 
@@ -270,11 +267,18 @@ function ActivityItem({ event, index }) {
 
 // ── Main Dashboard ──────────────────────────────────────────────────────────────
 function Dashboard() {
+  
   const dispatch = useDispatch();
-  const currentUser = getStoredUser();
+  let currentUser = null;
+  try {
+    currentUser = JSON.parse(localStorage.getItem("user") || "null");
+  } catch (_error) {
+    currentUser = null;
+  }
   const dashboard = useSelector((state) => state.dashboard.user);
   const loading = useSelector((state) => state.dashboard.loading);
   const error = useSelector((state) => state.dashboard.error);
+
 
   useEffect(() => {
     if (currentUser?.id) {

@@ -29,7 +29,6 @@ import {
   Popconfirm,
 } from "antd";
 import { useEffect, useMemo, useState } from "react";
-import { getCurrentRole, getStoredUser } from "../../utils/auth";
 import {
   deleteNotification,
   fetchNotifications,
@@ -229,8 +228,16 @@ function Notifications() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const currentUser = getStoredUser();
-  const currentRole = getCurrentRole();
+  let currentUser = null;
+  try {
+    currentUser = JSON.parse(localStorage.getItem("user") || "null");
+  } catch (_error) {
+    currentUser = null;
+  }
+  const currentRole =
+    String(currentUser?.role || "").toLowerCase() === "admin"
+      ? "admin"
+      : "user";
 
   useEffect(() => {
     let isMounted = true;

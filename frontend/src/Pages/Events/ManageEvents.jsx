@@ -4,7 +4,6 @@ import { useSelector, useDispatch } from "react-redux";
 import { useEffect, useMemo, useState } from "react";
 import { removeRequest } from "../../Services/requestSlice";
 import { approveEventAsync, rejectEventAsync, getAllEvents } from "../../Services/eventSlice";
-import { isEventPending } from "../../utils/eventApproval";
 
 function ManageEvents() {
   const [rejectionReason, setRejectonReason] = useState("");
@@ -44,10 +43,15 @@ function ManageEvents() {
     .filter((event) => event !== undefined);
 
   const pendingEventsFallback = events.filter(
-    (event) =>
-      event &&
-      isEventPending(event) &&
-      !pendingRequestEventIds.has(String(event._id)),
+    (event) => {
+      const approvalValue = String(event?.isApproved ?? "").toLowerCase();
+      const isPending = approvalValue === "" || approvalValue === "pending";
+      return (
+        event &&
+        isPending &&
+        !pendingRequestEventIds.has(String(event._id))
+      );
+    },
   );
 
   const matchedEvents = useMemo(

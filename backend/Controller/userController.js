@@ -1,11 +1,26 @@
 const userServices = require("../Services/userService");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const {
-  normalizeRole,
-  sanitizeUserRole,
-  sanitizeUserRoles,
-} = require("../Utils/role");
+
+const normalizeRole = (role) =>
+  String(role || "").toLowerCase() === "admin" ? "admin" : "user";
+
+const sanitizeUserRole = (user) => {
+  if (!user) {
+    return user;
+  }
+
+  const plainUser =
+    typeof user.toObject === "function" ? user.toObject() : { ...user };
+
+  return {
+    ...plainUser,
+    role: normalizeRole(plainUser.role),
+  };
+};
+
+const sanitizeUserRoles = (users) =>
+  Array.isArray(users) ? users.map((user) => sanitizeUserRole(user)) : [];
 
 const getUsers = async (req, res) => {
   try {

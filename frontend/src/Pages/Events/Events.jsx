@@ -11,19 +11,19 @@ import {
   notification,
   Divider,
 } from "antd";
-import { useState } from "react";
+import {  useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { addBooking } from "../../Services/bookingSlice";
+import { addBookingAsync } from "../../Services/bookingSlice";
 import { addPayment } from "../../Services/paymentSlice";
-import { updateEvent } from "../../Services/eventSlice";
+import { getAllEvents, updateEvent } from "../../Services/eventSlice";
 import Event_Detail from "../../Components/Event_Detail";
 import EventBookingPaymentModal from "../../Components/EventBookingPaymentModal";
-import { isEventApproved } from "../../utils/eventApproval";
+import { useEffect } from "react";
 
 function Events() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const events = useSelector((state) => state.event);
+  const events = useSelector((state) => state.event.eventsData);
   const dispatch = useDispatch();
 
   const [error, setError] = useState(null);
@@ -32,6 +32,10 @@ function Events() {
   const [bookingEvent, setBookingEvent] = useState(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
+
+useEffect(() => {
+    dispatch(getAllEvents());
+  }, [dispatch]);
 
   function onSearchFilter(e) {
     setSearch(e.target.value);
@@ -85,28 +89,35 @@ function Events() {
     setIsBookingSubmitting(true);
     setTimeout(() => {
       dispatch(
-        addBooking({
+        addBookingAsync({
           id: `BK-${stamp}`,
           eventId: bookingEvent.id,
           title: bookingEvent.title,
           name: bookingEvent.title,
           category: bookingEvent.category,
           location: bookingEvent.location,
-          organizer: bookingEvent.organizer || "EventX",
+          organizer:
+            typeof bookingEvent.organizer === "object"
+              ? [bookingEvent.organizer.firstName, bookingEvent.organizer.lastName]
+                  .filter(Boolean)
+                  .join(" ") || bookingEvent.organizer.email || "EventX"
+              : bookingEvent.organizer || "EventX",
           contact: bookingEvent.contact || "-",
           status: bookingEvent.status === "Ongoing" ? "Ongoing" : "Upcoming",
-          paymentStatus: "Paid",
+          paymentStatus: "paid",
           amount: totalAmount,
           price: totalAmount,
           date: bookingEvent.date || today,
           time: bookingEvent.time || "-",
           cover: bookingEvent.bannerImage || bookingEvent.cover,
           bannerImage: bookingEvent.bannerImage || bookingEvent.cover,
+          quantity: seatCount,
           number_of_guests: seatCount,
           reservedSeats: seatCount,
           user: values.fullName,
           email: values.email,
           method: values.paymentMethod,
+          ticketType: "Regular",
         }),
       );
 
@@ -144,16 +155,21 @@ function Events() {
   }
 
   const validEvents = Array.isArray(events)
-    ? events.filter(
-        (event) =>
-          event &&
-          typeof event.title === "string" &&
-          typeof event.status === "string" &&
-          typeof event.location === "string" &&
-          typeof event.category === "string" &&
-          event.bannerImage &&
-          isEventApproved(event),
-      )
+    ? events
+        .map((event) => ({
+          ...event,
+          id: event?.id || event?._id,
+        }))
+        .filter(
+          (event) =>
+            event &&
+            event.id &&
+            typeof event.title === "string" &&
+            typeof event.status === "string" &&
+            typeof event.location === "string" &&
+            typeof event.category === "string" &&
+            event.bannerImage,
+        )
     : [];
 
   const filteredEvents = validEvents
@@ -225,7 +241,7 @@ function Events() {
               width: "100%",
             }}
           >
-            <Radio.Button value={"all"}>All</Radio.Button>
+            <Radio.Button value={"all"}>All </Radio.Button>
             <Radio.Button value={"upcoming"}>Upcoming</Radio.Button>
             <Radio.Button value={"completed"}>Completed</Radio.Button>
             <Radio.Button value={"ongoing"}>Ongoing</Radio.Button>
@@ -323,7 +339,7 @@ function Events() {
                       <b>Location:</b> {event.location}
                     </div>
                     <div style={{ color: "#555" }}>
-                      <b>Organized By:</b> {event?.organizer ?? "Unknown"}
+                      <b>Organized By:</b> {event?.organizer?.firstName} {event?.organizer?.lastName}
                     </div>
                   </Card>
                 </Col>
@@ -475,7 +491,7 @@ function Events() {
                     <b>Location:</b> {event.location}
                   </div>
                   <div style={{ color: "#555" }}>
-                    <b>Organized By:</b> {event?.organizer ?? "Unknown"}
+                    <b>Organized By:</b> {event?.organizer?.firstName} {event?.organizer?.lastName}
                   </div>
                 </Card>
               </Col>

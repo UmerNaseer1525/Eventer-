@@ -1,88 +1,275 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const DUMMY_BOOKINGS = [
-  {
-    id: "BK-1001",
-    eventId: 1,
-    title: "Tech Conference 2026",
-    name: "Tech Conference 2026",
-    category: "Conference",
-    location: "Expo Center, City A",
-    organizer: "EventX",
-    status: "Upcoming",
-    paymentStatus: "Paid",
-    amount: 1000,
-    price: 1000,
-    date: "2026-04-12",
-    time: "10:00",
-    cover:
-      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
-    reservedSeats: 2,
-    user: "Ali Khan",
-    email: "ali@example.com",
-    method: "Credit Card",
-  },
-  {
-    id: "BK-1002",
-    eventId: 5,
-    title: "Music Festival",
-    name: "Music Festival",
-    category: "Concert",
-    location: "Open Grounds, City B",
-    organizer: "EventX",
-    status: "Ongoing",
-    paymentStatus: "Paid",
-    amount: 1000,
-    price: 1000,
-    date: "2026-04-20",
-    time: "18:30",
-    cover:
-      "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80",
-    reservedSeats: 1,
-    user: "Sara Noor",
-    email: "sara@example.com",
-    method: "Wallet",
-  },
-  {
-    id: "BK-1003",
-    eventId: 4,
-    title: "Tech Conference",
-    name: "Tech Conference",
-    category: "Conference",
-    location: "Expo Center, City A",
-    organizer: "EventX",
-    status: "Cancelled",
-    paymentStatus: "Refunded",
-    amount: 600,
-    price: 600,
-    date: "2026-03-10",
-    time: "14:00",
-    cover:
-      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
-    reservedSeats: 1,
-    user: "Umer Jamil",
-    email: "umer@example.com",
-    method: "Bank Transfer",
-  },
-];
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+  return {
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+}
 
 const bookingSlice = createSlice({
   name: "booking",
-  initialState: DUMMY_BOOKINGS,
+  initialState: [],
   reducers: {
-    setBookings: (state, action) => action.payload,
+    setBookings: (_state, action) => {
+      return Array.isArray(action.payload) ? action.payload : [];
+    },
     addBooking: (state, action) => {
       state.push(action.payload);
     },
     updateBooking: (state, action) => {
-      const idx = state.findIndex((b) => b.id === action.payload.id);
-      if (idx !== -1) state[idx] = action.payload;
+      const booking = action.payload || {};
+      const id = String(booking._id || booking.id || "");
+      const index = state.findIndex(
+        (item) => String(item._id || item.id) === id,
+      );
+      if (index !== -1) {
+        state[index] = {
+          ...state[index],
+          ...booking,
+          _id: booking._id || state[index]._id,
+          id: booking.id || state[index].id,
+        };
+      }
     },
     deleteBooking: (state, action) => {
-      return state.filter((b) => b.id !== action.payload);
+      const bookingId = String(action.payload);
+      return state.filter(
+        (booking) => String(booking._id || booking.id) !== bookingId,
+      );
     },
   },
 });
+
+export const getAllBookings = () => async (dispatch) => {
+  try {
+    const response = await fetch("http://localhost:3000/api/bookings", {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message);
+    }
+
+    dispatch(setBookings(data));
+    return data;
+  } catch (error) {
+    console.log(error.message);
+    throw error;
+  }
+};
+
+export const addBookingAsync = (bookingData) => async (dispatch) => {
+  try {
+    const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+    const attendeeId = storedUser?._id || storedUser?.id;
+    const eventId = bookingData?.eventId || bookingData?.event || bookingData?.id;
+    const quantity = Number(
+      bookingData?.quantity ??
+        bookingData?.reservedSeats ??
+        bookingData?.number_of_guests ??
+        1,
+    );
+    const totalPrice = Number(
+      bookingData?.totalPrice ?? bookingData?.amount ?? bookingData?.price ?? 0,
+    );
+
+    if (!attendeeId) {
+      throw new Error("Attendee id is required to create a booking");
+    }
+
+    if (!eventId) {
+      throw new Error("Event id is required to create a booking");
+    }
+
+    const response = await fetch("http://localhost:3000/api/bookings", {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        event: eventId,
+        attendee: attendeeId,
+        ticketType: bookingData?.ticketType || "Regular",
+        quantity,
+        totalPrice,
+        paymentStatus: String(bookingData?.paymentStatus || "paid").toLowerCase(),
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message);
+    }
+
+    dispatch(getAllBookings());
+    return data;
+  } catch (error) {
+    console.log(error.message);
+    throw error;
+  }
+};
+
+export const updateBookingAsync = (bookingData) => async (dispatch) => {
+  try {
+    const id = bookingData?.id || bookingData?._id || bookingData;
+    if (!id) {
+      throw new Error("Booking id is required to update a booking");
+    }
+
+    const response = await fetch(`http://localhost:3000/api/bookings/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        status: bookingData?.status,
+        paymentStatus: String(bookingData?.paymentStatus || "").toLowerCase(),
+        quantity:
+          bookingData?.quantity ??
+          bookingData?.reservedSeats ??
+          bookingData?.number_of_guests,
+        totalPrice:
+          bookingData?.totalPrice ?? bookingData?.amount ?? bookingData?.price,
+        ticketType: bookingData?.ticketType,
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message);
+    }
+
+    dispatch(getAllBookings());
+    return data;
+  } catch (error) {
+    console.log(error.message);
+    throw error;
+  }
+};
+
+export const deleteBookingAsync = (bookingId) => async (dispatch) => {
+  try {
+    const id = bookingId?.id || bookingId;
+    const response = await fetch(`http://localhost:3000/api/bookings/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message);
+    }
+
+    dispatch(deleteBooking(id));
+    dispatch(getAllBookings());
+    return data;
+  } catch (error) {
+    console.log(error.message);
+    throw error;
+  }
+};
+
+export const updatePaymentStatusAsync = (bookingData) => async (dispatch) => {
+  try {
+    const id = bookingData?.id || bookingData?._id || bookingData;
+    const response = await fetch(
+      `http://localhost:3000/api/bookings/${id}/payment-status`,
+      {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ paymentStatus: bookingData?.paymentStatus }),
+      },
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message);
+    }
+
+    dispatch(getAllBookings());
+    return data;
+  } catch (error) {
+    console.log(error.message);
+    throw error;
+  }
+};
+
+export const updateQuantityAsync = (bookingData) => async (dispatch) => {
+  try {
+    const id = bookingData?.id || bookingData?._id || bookingData;
+    const response = await fetch(
+      `http://localhost:3000/api/bookings/${id}/quantity`,
+      {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ quantity: bookingData?.quantity }),
+      },
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message);
+    }
+
+    dispatch(getAllBookings());
+    return data;
+  } catch (error) {
+    console.log(error.message);
+    throw error;
+  }
+};
+
+export const updateTotalPriceAsync = (bookingData) => async (dispatch) => {
+  try {
+    const id = bookingData?.id || bookingData?._id || bookingData;
+    const response = await fetch(
+      `http://localhost:3000/api/bookings/${id}/total-price`,
+      {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          totalPrice: bookingData?.totalPrice ?? bookingData?.amount ?? bookingData?.price,
+        }),
+      },
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message);
+    }
+
+    dispatch(getAllBookings());
+    return data;
+  } catch (error) {
+    console.log(error.message);
+    throw error;
+  }
+};
+
+export const updateTicketTypeAsync = (bookingData) => async (dispatch) => {
+  try {
+    const id = bookingData?.id || bookingData?._id || bookingData;
+    const response = await fetch(
+      `http://localhost:3000/api/bookings/${id}/ticket-type`,
+      {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ ticketType: bookingData?.ticketType }),
+      },
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message);
+    }
+
+    dispatch(getAllBookings());
+    return data;
+  } catch (error) {
+    console.log(error.message);
+    throw error;
+  }
+};
 
 export const { setBookings, addBooking, updateBooking, deleteBooking } =
   bookingSlice.actions;
