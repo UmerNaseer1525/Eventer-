@@ -7,6 +7,8 @@ const eventRoutes = require("./Routes/eventRoutes");
 const bookingRoutes = require("./Routes/bookingRoutes");
 const paymentRoutes = require("./Routes/paymentRoutes");
 const notificationRoutes = require("./Routes/notificationRoutes");
+const dashboardRoutes = require("./Routes/dashboardRoutes");
+const analyticsRoutes = require("./Routes/analyticsRoutes");
 
 
 const app = express();
@@ -25,6 +27,8 @@ app.use("/api/events", eventRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 app.get("/", (req, res) => {
   res.json({
@@ -38,6 +42,7 @@ app.get("/", (req, res) => {
       bookings: "/api/bookings",
       payments: "/api/payments",
       notifications: "/api/notifications",
+      dashboard: "/api/dashboard",
     },
   });
 });
@@ -63,3 +68,4 @@ connectDB()
     );
     process.exit(1);
   });
+

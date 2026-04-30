@@ -28,8 +28,14 @@ import {
   Avatar,
   Popconfirm,
 } from "antd";
-import { useState, useMemo } from "react";
-import { useSelector } from "react-redux";
+import { useEffect, useMemo, useState } from "react";
+import { getCurrentRole, getStoredUser } from "../../utils/auth";
+import {
+  deleteNotification,
+  fetchNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from "../../Services/notificationService";
 
 const { Text } = Typography;
 
@@ -44,118 +50,6 @@ const C = {
   gold:   "#faad14",
   gray:   "#8c8c8c",
 };
-
-// ── Static seed notifications ─────────────────────────────────────────────────
-const SEED_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: "booking",
-    title: "New Booking Confirmed",
-    message: "John Doe has successfully booked a seat for Tech Conference 2026.",
-    time: "2 minutes ago",
-    read: false,
-    category: "Bookings",
-  },
-  {
-    id: 2,
-    type: "event",
-    title: "Event Starting Soon",
-    message: "Music Festival is starting in 1 hour. Make sure everything is ready.",
-    time: "45 minutes ago",
-    read: false,
-    category: "Events",
-  },
-  {
-    id: 3,
-    type: "payment",
-    title: "Payment Received",
-    message: "A payment of $350 was successfully processed for Startup Summit.",
-    time: "1 hour ago",
-    read: false,
-    category: "Payments",
-  },
-  {
-    id: 4,
-    type: "warning",
-    title: "Event Capacity Warning",
-    message: "Jazz Night is 90% booked. Only 8 seats remaining.",
-    time: "2 hours ago",
-    read: false,
-    category: "Events",
-  },
-  {
-    id: 5,
-    type: "cancelled",
-    title: "Event Cancelled",
-    message: "Art & Design Expo has been cancelled by the organizer. All bookings will be refunded.",
-    time: "3 hours ago",
-    read: true,
-    category: "Events",
-  },
-  {
-    id: 6,
-    type: "user",
-    title: "New User Registered",
-    message: "Sarah Johnson has created a new account and is browsing upcoming events.",
-    time: "5 hours ago",
-    read: true,
-    category: "Users",
-  },
-  {
-    id: 7,
-    type: "booking",
-    title: "Booking Cancelled",
-    message: "Mike Smith has cancelled their booking for Tech Conference 2026. Seat is now available.",
-    time: "6 hours ago",
-    read: true,
-    category: "Bookings",
-  },
-  {
-    id: 8,
-    type: "payment",
-    title: "Refund Processed",
-    message: "A refund of $120 has been issued to Emily Clark for the cancelled Workshop event.",
-    time: "Yesterday, 4:30 PM",
-    read: true,
-    category: "Payments",
-  },
-  {
-    id: 9,
-    type: "info",
-    title: "System Maintenance Scheduled",
-    message: "The platform will undergo scheduled maintenance on Sunday, 2:00 AM – 4:00 AM.",
-    time: "Yesterday, 2:00 PM",
-    read: true,
-    category: "System",
-  },
-  {
-    id: 10,
-    type: "event",
-    title: "New Event Published",
-    message: "Summer Meetup 2026 has been published and is now live for bookings.",
-    time: "2 days ago",
-    read: true,
-    category: "Events",
-  },
-  {
-    id: 11,
-    type: "warning",
-    title: "Overdue Payment Alert",
-    message: "Invoice #2045 for Startup Summit is overdue by 3 days. Please follow up.",
-    time: "2 days ago",
-    read: true,
-    category: "Payments",
-  },
-  {
-    id: 12,
-    type: "user",
-    title: "Admin Role Assigned",
-    message: "Alex Turner has been granted admin access to manage events and bookings.",
-    time: "3 days ago",
-    read: true,
-    category: "Users",
-  },
-];
 
 // ── Config per notification type ──────────────────────────────────────────────
 const TYPE_CONFIG = {
@@ -330,16 +224,60 @@ function NotificationItem({ notification, onMarkRead, onDelete }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 function Notifications() {
-  const [notifications, setNotifications] = useState(SEED_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const currentUser = getStoredUser();
+  const currentRole = getCurrentRole();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadNotifications = async () => {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const data = await fetchNotifications(
+          currentRole === "admin"
+            ? {}
+            : currentUser?.id
+              ? { recipientId: currentUser.id }
+              : {},
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        setNotifications(data);
+      } catch (error) {
+        if (isMounted) {
+          setErrorMessage(error.message || "Unable to load notifications.");
+          setNotifications([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadNotifications();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentRole, currentUser?.id]);
 
   const unreadCount   = notifications.filter((n) => !n.read).length;
   const bookingCount  = notifications.filter((n) => n.type === "booking").length;
   const paymentCount  = notifications.filter((n) => n.type === "payment").length;
   const warningCount  = notifications.filter((n) => n.type === "warning" || n.type === "cancelled").length;
 
-  const categories = ["all", ...Array.from(new Set(SEED_NOTIFICATIONS.map((n) => n.category)))];
+  const categories = ["all", ...Array.from(new Set(notifications.map((n) => n.category)))];
 
   const filtered = useMemo(() => {
     return notifications.filter((n) => {
@@ -351,22 +289,51 @@ function Notifications() {
     });
   }, [notifications, filter, categoryFilter]);
 
-  function handleMarkRead(id) {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+  async function handleMarkRead(id) {
+    try {
+      await markNotificationAsRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      );
+    } catch (error) {
+      setErrorMessage(error.message || "Unable to update notification.");
+    }
   }
 
-  function handleDelete(id) {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  async function handleDelete(id) {
+    try {
+      await deleteNotification(id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    } catch (error) {
+      setErrorMessage(error.message || "Unable to delete notification.");
+    }
   }
 
-  function handleMarkAllRead() {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  async function handleMarkAllRead() {
+    try {
+      if (currentRole !== "admin" && currentUser?.id) {
+        await markAllNotificationsAsRead(currentUser.id);
+      } else {
+        await Promise.all(
+          notifications
+            .filter((notification) => !notification.read)
+            .map((notification) => markNotificationAsRead(notification.id)),
+        );
+      }
+
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (error) {
+      setErrorMessage(error.message || "Unable to update notifications.");
+    }
   }
 
-  function handleClearAll() {
-    setNotifications([]);
+  async function handleClearAll() {
+    try {
+      await Promise.all(notifications.map((notification) => deleteNotification(notification.id)));
+      setNotifications([]);
+    } catch (error) {
+      setErrorMessage(error.message || "Unable to clear notifications.");
+    }
   }
 
   return (
@@ -429,6 +396,31 @@ function Notifications() {
       </div>
 
       {/* ── Summary Stats */}
+      {errorMessage && (
+        <Card
+          style={{
+            borderRadius: 14,
+            marginBottom: 20,
+            borderColor: "#ffccc7",
+            background: "#fff2f0",
+          }}
+        >
+          <Text style={{ color: "#cf1322", fontWeight: 600 }}>{errorMessage}</Text>
+        </Card>
+      )}
+
+      {isLoading && (
+        <Card
+          style={{
+            borderRadius: 14,
+            marginBottom: 20,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+          }}
+        >
+          <Text style={{ color: "#666" }}>Loading notifications...</Text>
+        </Card>
+      )}
+
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={12} md={6}>
           <MiniStatCard
