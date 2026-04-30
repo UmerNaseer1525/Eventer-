@@ -22,6 +22,7 @@ function Signup() {
     let update_value = {
       ...value,
       status: "active",
+      role: "user",
       profileImage: "profile.png",
     };
 
