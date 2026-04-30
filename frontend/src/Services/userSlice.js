@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { normalizeRole } from "../utils/auth";
 
 const USER_BASE_URL = "http://localhost:3000/api/users/";
 
@@ -52,12 +53,17 @@ const userSlice = createSlice({
 
 export const createNewUser = (userRecord) => async (dispatch) => {
   try {
+    const payload = {
+      ...userRecord,
+      role: normalizeRole(userRecord?.role),
+    };
+
     const response = await fetch(USER_BASE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(userRecord),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

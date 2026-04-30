@@ -19,13 +19,19 @@ import {
 } from "../utils/eventApproval";
 
 function EventApprovalQueue({ open, onClose }) {
-  const events = useSelector((state) => state.event);
+  const pendingEvents = useSelector((state) => state.event.pendingAprovalEvents);
+  const rejectedEvents = useSelector((state) => state.event.rejectedEvents);
   const dispatch = useDispatch();
   const [editModal, setEditModal] = useState({ open: false, event: null });
 
-  const queue = Array.isArray(events)
-    ? events.filter((event) => event && isEventInApprovalQueue(event))
-    : [];
+  const allPendingAndRejected = [
+    ...(Array.isArray(pendingEvents) ? pendingEvents : []),
+    ...(Array.isArray(rejectedEvents) ? rejectedEvents : []),
+  ];
+
+  const queue = allPendingAndRejected.filter(
+    (event) => event && isEventInApprovalQueue(event)
+  );
 
   const handleRequestAgain = (eventId) => {
     dispatch(
@@ -57,7 +63,7 @@ function EventApprovalQueue({ open, onClose }) {
               const approvalStatus = normalizeApprovalStatus(event);
 
               return (
-                <List.Item key={event.id}>
+                <List.Item key={event._id}>
                   <List.Item.Meta
                     title={
                       <Space>
@@ -101,7 +107,7 @@ function EventApprovalQueue({ open, onClose }) {
                       <Space>
                         <Button
                           type="primary"
-                          onClick={() => handleRequestAgain(event.id)}
+                          onClick={() => handleRequestAgain(event._id)}
                         >
                           Request Again
                         </Button>

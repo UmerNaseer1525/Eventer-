@@ -78,7 +78,7 @@ Response:
   lastName: String,           // Required
   email: String,              // Required, Unique
   password: String,           // Required (store hashed in production)
-  role: String,               // Required, enum: ["organizer", "attendee", "admin"]
+  role: String,               // Required, enum: ["admin", "user"]
   phone: String,              // Optional
   profileImage: String,       // Optional (URL)
   status: String,             // Default: "active", enum: ["active", "blocked"]
@@ -196,7 +196,7 @@ POST /api/users
   "lastName": "Doe",
   "email": "john@example.com",
   "password": "securePassword123",
-  "role": "attendee",
+  "role": "user",
   "phone": "1234567890",
   "profileImage": "https://example.com/image.jpg"
 }
@@ -1206,7 +1206,7 @@ GET endpoints automatically populate referenced documents:
 
 Make sure to use exact values for enum fields:
 
-- **User Role**: `"organizer"`, `"attendee"`, `"admin"` (lowercase)
+- **User Role**: `"admin"`, `"user"` (lowercase)
 - **User Status**: `"active"`, `"blocked"`
 - **Event Status**: `"draft"`, `"published"`, `"cancelled"`
 - **Ticket Type**: `"VIP"`, `"Regular"` (case-sensitive)
@@ -1258,7 +1258,7 @@ fetch("http://localhost:3000/api/users", {
     lastName: "Doe",
     email: "john@example.com",
     password: "password123",
-    role: "attendee",
+    role: "user",
   }),
 })
   .then((response) => response.json())

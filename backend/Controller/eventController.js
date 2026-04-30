@@ -2,9 +2,7 @@ const eventService = require("../Services/eventService");
 
 const getEvents = async (req, res) => {
   try {
-    const events = await eventService
-      .getAllEvents()
-      .populate("organizer", "firstName lastName email phone");
+    const events = await eventService.getAllEvents();
     res.status(200).json(events);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -14,9 +12,7 @@ const getEvents = async (req, res) => {
 const getEvent = async (req, res) => {
   try {
     const { id } = req.params;
-    const event = await eventService
-      .getEventById(id)
-      .populate("organizer", "firstName lastName email phone");
+    const event = await eventService.getEventById(id);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
@@ -39,7 +35,23 @@ const getEventsByOrganizer = async (req, res) => {
 const getEventsByCategory = async (req, res) => {
   try {
     const { categoryId } = req.params;
-    const events = await eventService.getEventsByCategory(categoryId);
+    const category = categoryId;
+    const events = await eventService.getEventsByCategory(category);
+    res.status(200).json(events);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getEventsByApprovalStatus = async (req, res) => {
+  try {
+    const { status } = req.params;
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        message: "Invalid approval status. Must be 'pending', 'approved', or 'rejected'",
+      });
+    }
+    const events = await eventService.getEventsByApprovalStatus(status);
     res.status(200).json(events);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -64,10 +76,10 @@ const getEventsByStatus = async (req, res) => {
 const createEvent = async (req, res) => {
   try {
     const event = await eventService.createEvent(req.body);
-    res.status(201).json({
-      message: "Event created successfully",
-      eventId: event._id,
-    });
+    if(!event) {
+      return res.status(400).json({message:"event not created"})
+    }
+    res.status(201).json({ message: "Event created successfully", event: event });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -89,11 +101,11 @@ const deleteEvent = async (req, res) => {
 const updateEvent = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await eventService.updateEvent(id, req.body);
-    if (result.matchedCount === 0) {
+    const updated = await eventService.updateEvent(id, req.body);
+    if (!updated) {
       return res.status(404).json({ message: "Event not found" });
     }
-    res.status(200).json({ message: "Event updated successfully" });
+    res.status(200).json({ message: "Event updated successfully", event: updated });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -108,7 +120,7 @@ const updateStatus = async (req, res) => {
     }
     if (!["Upcoming", "Completed", "Cancelled", "Ongoing"].includes(status)) {
       return res.status(400).json({
-        message: "Invalid status. Must be 'draft', 'published', or 'cancelled'",
+        message: "Invalid status. Must be 'Upcoming', 'Completed', 'Ongoing' or 'Cancelled'",
       });
     }
     const result = await eventService.updateStatus(id, status);
@@ -116,6 +128,28 @@ const updateStatus = async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
     res.status(200).json({ message: "Event status updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const updateApprovalStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ message: "Approval status is required" });
+    }
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        message: "Invalid approval status. Must be 'pending', 'approved', or 'rejected'",
+      });
+    }
+    const result = await eventService.updateApprovalStatus(id, status);
+    if (!result) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+    res.status(200).json({ message: "Approval status updated successfully", event: result });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -205,10 +239,12 @@ module.exports = {
   getEventsByOrganizer,
   getEventsByCategory,
   getEventsByStatus,
+  getEventsByApprovalStatus,
   createEvent,
   deleteEvent,
   updateEvent,
   updateStatus,
+  updateApprovalStatus,
   updateBannerImage,
   updateTicketPrice,
   updateCapacity,

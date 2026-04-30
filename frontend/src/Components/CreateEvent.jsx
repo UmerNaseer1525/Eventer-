@@ -9,7 +9,6 @@ import {
 } from "antd";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { addRequest } from "../Services/requestSlice";
 import { addEvent } from "../Services/eventSlice";
 
 export default function CreateEvent({ isOpen, onModalClose }) {
@@ -17,25 +16,29 @@ export default function CreateEvent({ isOpen, onModalClose }) {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = (values) => {
+  const onFinish = async (values) => {
     const dateTime = values.date;
     const date = dateTime.format("YYYY-MM-DD");
     const time = dateTime.format("HH:mm");
+    const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+    const organizerId = storedUser?._id || storedUser?.id;
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      if (!organizerId) {
+        throw new Error("Unable to determine the logged-in user.");
+      }
+
       const newEvent = {
         ...values,
-        id: Date.now(),
-        status: "Upcoming",
-        approvedStatus: "Pending",
-        date: date,
-        time: time,
-        organizer: JSON.parse(localStorage.getItem("user")).email,
+        organizer: organizerId,
+        status: "upcoming",
+        isApproved: "pending",
+        date,
+        time,
       };
 
-      dispatch(addRequest({ eventId: newEvent.id }));
-      dispatch(addEvent(newEvent));
+      await dispatch(addEvent(newEvent));
       notification.success({
         title: "Event Created",
         description: "Your event has been created and is pending approval.",
@@ -43,7 +46,13 @@ export default function CreateEvent({ isOpen, onModalClose }) {
       form.resetFields();
       onModalClose();
       setLoading(false);
-    }, 1000);
+    } catch (error) {
+      notification.error({
+        title: "Create Event Failed",
+        description: error.message || "Unable to create event.",
+      });
+      setLoading(false);
+    }
   };
 
   const disabledDate = (current) => {

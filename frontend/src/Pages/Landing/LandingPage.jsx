@@ -54,7 +54,7 @@ export default function LandingPage() {
   ];
 
   const steps = [
-    { num: "01", icon: "✍️", title: "Create Your Account", desc: "Sign up in seconds. Choose organizer or attendee — or both. No credit card required." },
+    { num: "01", icon: "✍️", title: "Create Your Account", desc: "Sign up in seconds. Your account is created as a user, and admin access is assigned separately. No credit card required." },
     { num: "02", icon: "🎨", title: "Build Your Event",     desc: "Add cover images, set dates, pick a category, and configure ticket prices." },
     { num: "03", icon: "📢", title: "Go Live & Promote",    desc: "Publish and let attendees discover your event through search and category browsing." },
     { num: "04", icon: "💰", title: "Track & Earn",         desc: "Watch bookings roll in, manage attendees, and view your earnings from the dashboard." },

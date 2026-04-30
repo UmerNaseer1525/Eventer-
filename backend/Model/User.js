@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { normalizeRole } = require("../Utils/role");
 
 const userSchema = new mongoose.Schema({
   firstName: {
@@ -29,8 +30,10 @@ const userSchema = new mongoose.Schema({
 
   role: {
     type: String,
-    enum: ["organizer", "attendee", "admin"],
+    enum: ["admin", "user"],
     required: true,
+    default: "user",
+    set: normalizeRole,
   },
 
   phone: {

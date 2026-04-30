@@ -1,9 +1,7 @@
+import { normalizeRole } from "../utils/auth";
+
 const LOGIN_URL = "http://localhost:3000/api/users/login";
 const USERS_URL = "http://localhost:3000/api/users";
-
-function normalizeRole(role) {
-  return String(role || "").toLowerCase() === "admin" ? "admin" : "user";
-}
 
 async function validateUser(data) {
   try {

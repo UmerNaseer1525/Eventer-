@@ -1,9 +1,9 @@
 import { CheckOutlined, CloseOutlined } from "@ant-design/icons";
 import { Button, Input, Modal, notification, Table } from "antd";
 import { useSelector, useDispatch } from "react-redux";
+import { useEffect, useMemo, useState } from "react";
 import { removeRequest } from "../../Services/requestSlice";
-import { eventApproved, eventRejected } from "../../Services/eventSlice";
-import { useState } from "react";
+import { approveEventAsync, rejectEventAsync, getAllEvents } from "../../Services/eventSlice";
 import { isEventPending } from "../../utils/eventApproval";
 
 function ManageEvents() {
@@ -13,7 +13,11 @@ function ManageEvents() {
   const [loadingId, setLoadingId] = useState(null);
   const dispatch = useDispatch();
   const requests = useSelector((state) => state.request);
-  const events = useSelector((state) => state.event);
+  const events = useSelector((state) => state.event.pendingAprovalEvents);
+
+  useEffect(() => {
+    dispatch(getAllEvents());
+  }, [dispatch]);
 
   const pendingRequestEventIds = new Set(
     requests
@@ -35,7 +39,7 @@ function ManageEvents() {
 
   const matchedEventsFromRequests = eventRequests
     .map((req) =>
-      events.find((event) => String(event.id) === String(req.eventId)),
+      events.find((event) => String(event._id) === String(req.eventId)),
     )
     .filter((event) => event !== undefined);
 
@@ -43,14 +47,14 @@ function ManageEvents() {
     (event) =>
       event &&
       isEventPending(event) &&
-      !pendingRequestEventIds.has(String(event.id)),
+      !pendingRequestEventIds.has(String(event._id)),
   );
 
-  const matchedEvents = [
-    ...matchedEventsFromRequests,
-    ...pendingEventsFallback,
-  ];
-  function handleReject(eventId, rejection_reason) {
+  const matchedEvents = useMemo(
+    () => [...matchedEventsFromRequests, ...pendingEventsFallback],
+    [matchedEventsFromRequests, pendingEventsFallback],
+  );
+  async function handleReject(eventId, rejection_reason) {
     if (!rejection_reason || !rejection_reason.trim()) {
       notification.error({
         message: "Rejection Reason Required",
@@ -59,14 +63,9 @@ function ManageEvents() {
       return;
     }
     setLoadingId(eventId);
-    setTimeout(() => {
+    try {
+      await dispatch(rejectEventAsync(eventId, rejection_reason));
       setIsModalOpen(false);
-      dispatch(
-        eventRejected({
-          id: eventId,
-          reason: rejection_reason,
-        }),
-      );
       dispatch(removeRequest(eventId));
       notification.success({
         title: "Request Rejected",
@@ -74,23 +73,35 @@ function ManageEvents() {
         duration: 3,
         placement: "topRight",
       });
-      setLoadingId(null);
       setRejectonReason("");
-    }, 800);
+    } catch (error) {
+      notification.error({
+        message: "Reject Failed",
+        description: error.message || "Unable to reject event.",
+      });
+    } finally {
+      setLoadingId(null);
+    }
   }
-  function handleApprove(eventId) {
+  async function handleApprove(eventId) {
     setLoadingId(eventId);
-    dispatch(eventApproved({ id: eventId }));
-    dispatch(removeRequest(eventId));
-    setTimeout(() => {
+    try {
+      await dispatch(approveEventAsync(eventId));
+      dispatch(removeRequest(eventId));
       notification.success({
         title: "Request Approved",
         description: "You Approved the request.",
         duration: 3,
         placement: "topRight",
       });
+    } catch (error) {
+      notification.error({
+        message: "Approve Failed",
+        description: error.message || "Unable to approve event.",
+      });
+    } finally {
       setLoadingId(null);
-    }, 800);
+    }
   }
   const columns = [
     {
@@ -142,9 +153,9 @@ function ManageEvents() {
               type="default"
               danger
               style={{ minWidth: 100, fontWeight: 500 }}
-              loading={loadingId === record.id}
+              loading={loadingId === record._id}
               onClick={() => {
-                setEvent_id(record.id);
+                setEvent_id(record._id);
                 setIsModalOpen(true);
               }}
             >
@@ -154,8 +165,8 @@ function ManageEvents() {
               icon={<CheckOutlined />}
               type="primary"
               style={{ minWidth: 100, fontWeight: 500 }}
-              loading={loadingId === record.id}
-              onClick={() => handleApprove(record.id)}
+              loading={loadingId === record._id}
+              onClick={() => handleApprove(record._id)}
             >
               Approve
             </Button>

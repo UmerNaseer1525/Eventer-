@@ -1,11 +1,16 @@
 const userServices = require("../Services/userService");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const {
+  normalizeRole,
+  sanitizeUserRole,
+  sanitizeUserRoles,
+} = require("../Utils/role");
 
 const getUsers = async (req, res) => {
   try {
     const users = await userServices.getAllUsers();
-    res.status(200).json(users);
+    res.status(200).json(sanitizeUserRoles(users));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -18,7 +23,7 @@ const getUserByEmail = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json(user);
+    res.status(200).json(sanitizeUserRole(user));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -46,8 +51,10 @@ const loginUser = async (req, res) => {
         .json({ message: "Invalid email or password. Please try again." });
     }
 
+    const role = normalizeRole(user.role);
+
     const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
+      { id: user._id, email: user.email, role },
       process.env.JWT_SECRET_KEY,
       { expiresIn: "24h" },
     );
@@ -55,13 +62,13 @@ const loginUser = async (req, res) => {
     res.status(200).json({
       message: "Login Successfully",
       token: token,
-      user: {
+      user: sanitizeUserRole({
         id: user._id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role,
-      },
+        role,
+      }),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -88,6 +95,7 @@ const createUser = async (req, res) => {
 
     const userData = {
       ...req.body,
+      role: "user",
       password: hashedPassword,
       profileImage: profileImagePath,
     };
@@ -216,7 +224,9 @@ const updateUser = async (req, res) => {
     if (result.matchedCount === 0) {
       return res.status(404).json({ message: "User not found" });
     }
-    const updatedUser = await userServices.getUserByEmailWithoutPassword(email);
+    const updatedUser = sanitizeUserRole(
+      await userServices.getUserByEmailWithoutPassword(email),
+    );
     res
       .status(200)
       .json({ message: "User updated successfully", user: updatedUser });

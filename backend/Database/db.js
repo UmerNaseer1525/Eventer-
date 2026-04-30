@@ -1,4 +1,21 @@
 const mongoose = require("mongoose");
+ 
+async function normalizeLegacyUserRoles() {
+  const User = require("../Model/User");
+  const result = await User.updateMany(
+    {
+      $or: [
+        { role: { $exists: false } },
+        { role: { $nin: ["admin", "user"] } },
+      ],
+    },
+    { $set: { role: "user" } },
+  );
+
+  if (result.modifiedCount > 0) {
+    console.log(`Normalized ${result.modifiedCount} legacy user role record(s).`);
+  }
+}
 
 const connectDB = async () => {
   try {
@@ -9,6 +26,7 @@ const connectDB = async () => {
     });
     console.log("MongoDB Connected successfully!");
     console.log("Using database:", mongoose.connection.name);
+    await normalizeLegacyUserRoles();
   } catch (error) {
     console.error("Database connection failed:", error.message);
     console.error("Error code:", error.code);

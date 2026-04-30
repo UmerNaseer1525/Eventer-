@@ -18,7 +18,7 @@ const eventSchema = new mongoose.Schema({
   },
 
   category: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: "Category",
     required: true,
   },
@@ -55,8 +55,14 @@ const eventSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ["draft", "published", "cancelled"],
-    default: "draft",
+    enum: ["completed","ongoing", "cancelled", 'upcoming'],
+    default: "upcoming",
+  },
+
+  isApproved: {
+    type:String,
+    enum: ['pending', 'approved', 'rejected'],
+    required: true
   },
 
   createdAt: {
