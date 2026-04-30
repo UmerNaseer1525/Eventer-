@@ -29,12 +29,15 @@ import {
   Popconfirm,
 } from "antd";
 import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { getCurrentRole, getStoredUser } from "../../utils/auth";
 import {
-  deleteNotification,
-  fetchNotifications,
-  markAllNotificationsAsRead,
-  markNotificationAsRead,
-} from "../../Services/notificationService";
+  clearAllNotificationsThunk,
+  deleteNotificationThunk,
+  fetchNotificationsThunk,
+  markAllNotificationsReadThunk,
+  markNotificationReadThunk,
+} from "../../Services/notificationSlice";
 
 const { Text } = Typography;
 
@@ -223,65 +226,26 @@ function NotificationItem({ notification, onMarkRead, onDelete }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 function Notifications() {
-  const [notifications, setNotifications] = useState([]);
+  const dispatch = useDispatch();
+  const notifications = useSelector((state) => state.notification.items);
+  const isLoading = useSelector((state) => state.notification.loading);
+  const errorMessage = useSelector((state) => state.notification.error);
   const [filter, setFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  let currentUser = null;
-  try {
-    currentUser = JSON.parse(localStorage.getItem("user") || "null");
-  } catch (_error) {
-    currentUser = null;
-  }
-  const currentRole =
-    String(currentUser?.role || "").toLowerCase() === "admin"
-      ? "admin"
-      : "user";
+  const currentUser = getStoredUser();
+  const currentRole = getCurrentRole();
 
   useEffect(() => {
-    let isMounted = true;
-
-    const loadNotifications = async () => {
-      setIsLoading(true);
-      setErrorMessage("");
-
-      try {
-        const data = await fetchNotifications(
-          currentRole === "admin"
-            ? {}
-            : currentUser?.id
-              ? { recipientId: currentUser.id }
-              : {},
-        );
-
-        if (!isMounted) {
-          return;
-        }
-
-        setNotifications(data);
-      } catch (error) {
-        if (isMounted) {
-          setErrorMessage(error.message || "Unable to load notifications.");
-          setNotifications([]);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadNotifications();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentRole, currentUser?.id]);
+    dispatch(
+      fetchNotificationsThunk({
+        currentRole,
+        recipientId: currentUser?._id || currentUser?.id,
+      }),
+    );
+  }, [dispatch, currentRole, currentUser?._id, currentUser?.id]);
 
   const unreadCount   = notifications.filter((n) => !n.read).length;
   const bookingCount  = notifications.filter((n) => n.type === "booking").length;
-  const paymentCount  = notifications.filter((n) => n.type === "payment").length;
   const warningCount  = notifications.filter((n) => n.type === "warning" || n.type === "cancelled").length;
 
   const categories = ["all", ...Array.from(new Set(notifications.map((n) => n.category)))];
@@ -298,48 +262,39 @@ function Notifications() {
 
   async function handleMarkRead(id) {
     try {
-      await markNotificationAsRead(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-      );
+      await dispatch(markNotificationReadThunk(id)).unwrap();
     } catch (error) {
-      setErrorMessage(error.message || "Unable to update notification.");
+      console.error(error);
     }
   }
 
   async function handleDelete(id) {
     try {
-      await deleteNotification(id);
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      await dispatch(deleteNotificationThunk(id)).unwrap();
     } catch (error) {
-      setErrorMessage(error.message || "Unable to delete notification.");
+      console.error(error);
     }
   }
 
   async function handleMarkAllRead() {
     try {
-      if (currentRole !== "admin" && currentUser?.id) {
-        await markAllNotificationsAsRead(currentUser.id);
-      } else {
-        await Promise.all(
-          notifications
-            .filter((notification) => !notification.read)
-            .map((notification) => markNotificationAsRead(notification.id)),
-        );
-      }
-
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      await dispatch(
+        markAllNotificationsReadThunk({
+          currentRole,
+          recipientId: currentUser?.id,
+          notifications,
+        }),
+      ).unwrap();
     } catch (error) {
-      setErrorMessage(error.message || "Unable to update notifications.");
+      console.error(error);
     }
   }
 
   async function handleClearAll() {
     try {
-      await Promise.all(notifications.map((notification) => deleteNotification(notification.id)));
-      setNotifications([]);
+      await dispatch(clearAllNotificationsThunk(notifications)).unwrap();
     } catch (error) {
-      setErrorMessage(error.message || "Unable to clear notifications.");
+      console.error(error);
     }
   }
 

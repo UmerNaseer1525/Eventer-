@@ -47,7 +47,7 @@ function Settings() {
   const currentUser = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("user") || "null");
-    } catch (_error) {
+    } catch {
       return null;
     }
   }, []);
@@ -197,8 +197,22 @@ function Settings() {
   }
 
   function handleProfileImageChange(info) {
-    const selectedFile = info.file?.originFileObj;
+    // Get the file from the upload event
+    let selectedFile = null;
+    
+    // Try different ways to access the file object
+    if (info.file?.originFileObj) {
+      selectedFile = info.file.originFileObj;
+    } else if (info.file instanceof File) {
+      selectedFile = info.file;
+    } else if (info.fileList?.[0]?.originFileObj) {
+      selectedFile = info.fileList[0].originFileObj;
+    } else if (info.fileList?.[0]?.file) {
+      selectedFile = info.fileList[0].file;
+    }
+
     if (!selectedFile) {
+      console.warn('Could not extract file from upload event:', info);
       return;
     }
 

@@ -1,4 +1,13 @@
 const eventService = require("../Services/eventService");
+const notificationService = require("../Services/notificationService");
+
+async function createEventNotification(notificationData) {
+  try {
+    await notificationService.createNotification(notificationData);
+  } catch (error) {
+    console.error("Failed to create event notification:", error.message);
+  }
+}
 
 const getEvents = async (req, res) => {
   try {
@@ -79,6 +88,17 @@ const createEvent = async (req, res) => {
     if(!event) {
       return res.status(400).json({message:"event not created"})
     }
+
+    await createEventNotification({
+      target: "admin",
+      type: "event",
+      category: "Event",
+      title: `New event request: ${event.title}`,
+      message: `${event.organizer?.firstName || "A user"} submitted a new event for approval.`,
+      relatedId: event._id,
+      relatedModel: "Event",
+    });
+
     res.status(201).json({ message: "Event created successfully", event: event });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -127,6 +147,20 @@ const updateStatus = async (req, res) => {
     if (!result) {
       return res.status(404).json({ message: "Event not found" });
     }
+
+    if (result.organizer) {
+      await createEventNotification({
+        recipient: result.organizer._id,
+        target: "user",
+        type: "info",
+        category: "Event",
+        title: `Event status updated: ${result.title}`,
+        message: `Your event status changed to ${status.toLowerCase()}.`,
+        relatedId: result._id,
+        relatedModel: "Event",
+      });
+    }
+
     res.status(200).json({ message: "Event status updated successfully", event: result });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -149,6 +183,39 @@ const updateApprovalStatus = async (req, res) => {
     if (!result) {
       return res.status(404).json({ message: "Event not found" });
     }
+
+    if (status === "pending") {
+      await createEventNotification({
+        target: "admin",
+        type: "warning",
+        category: "Event",
+        title: `Event moved back to pending: ${result.title}`,
+        message: `An event has been moved back to the pending approval queue.`,
+        relatedId: result._id,
+        relatedModel: "Event",
+      });
+    } else if (result.organizer) {
+      const notificationTitle =
+        status === "approved"
+          ? `Event approved: ${result.title}`
+          : `Event rejected: ${result.title}`;
+      const notificationMessage =
+        status === "approved"
+          ? "Your event has been approved and is now visible to attendees."
+          : "Your event was rejected. Please review the feedback and update it if needed.";
+
+      await createEventNotification({
+        recipient: result.organizer._id,
+        target: "user",
+        type: status === "approved" ? "event" : "warning",
+        category: "Event",
+        title: notificationTitle,
+        message: notificationMessage,
+        relatedId: result._id,
+        relatedModel: "Event",
+      });
+    }
+
     res.status(200).json({ message: "Approval status updated successfully", event: result });
   } catch (error) {
     res.status(500).json({ message: error.message });

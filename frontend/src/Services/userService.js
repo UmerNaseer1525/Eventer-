@@ -51,6 +51,7 @@ async function validateUser(data) {
               "admin"
                 ? "admin"
                 : "user",
+            profileImage: profile?.profileImage || mergedUser?.profileImage,
           };
         }
       }

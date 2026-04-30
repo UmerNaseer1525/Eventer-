@@ -14,16 +14,12 @@ const getAnalytics = async (organizerId = null) => {
       .populate("category", "name")
       .lean();
 
-    // Filter approved events
-    const approvedEvents = events.filter(
-      (e) =>
-        String(e.status || "").toLowerCase() === "approved" ||
-        String(e.status || "").toLowerCase() === "published"
-    );
+    // Use all stored events so analytics matches the database record count
+    const reportEvents = events;
 
-    const eventIds = approvedEvents.map((e) => e._id);
+    const eventIds = reportEvents.map((e) => e._id);
 
-    // Get bookings for approved events
+    // Get bookings for all events in the report
     const bookings = await Booking.find({
       event: { $in: eventIds },
     })
@@ -44,27 +40,27 @@ const getAnalytics = async (organizerId = null) => {
       .lean();
 
     // Calculate statistics
-    const stats = calculateStats(approvedEvents, paidBookings, payments);
+    const stats = calculateStats(reportEvents, paidBookings, payments);
 
     // Build timeline data for charts
-    const timelineData = buildTimelineData(approvedEvents, paidBookings, payments);
+    const timelineData = buildTimelineData(reportEvents, paidBookings, payments);
 
     // Calculate category breakdown
-    const categoryBreakdown = calculateCategoryBreakdown(approvedEvents);
+    const categoryBreakdown = calculateCategoryBreakdown(reportEvents);
 
     // Calculate status breakdown
-    const statusBreakdown = calculateStatusBreakdown(approvedEvents);
+    const statusBreakdown = calculateStatusBreakdown(reportEvents);
 
     // Get top events
     const topEvents = calculateTopEvents(
-      approvedEvents,
+      reportEvents,
       paidBookings,
       payments
     );
 
     // Calculate additional metrics
     const additionalMetrics = calculateAdditionalMetrics(
-      approvedEvents,
+      reportEvents,
       paidBookings,
       payments
     );
@@ -77,7 +73,7 @@ const getAnalytics = async (organizerId = null) => {
       topEvents,
       additionalMetrics,
       rawData: {
-        events: approvedEvents.length,
+        events: reportEvents.length,
         bookings: paidBookings.length,
         payments: payments.length,
       },
