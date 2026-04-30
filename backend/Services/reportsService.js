@@ -25,24 +25,12 @@ const generateReportData = async (organizerId = null, dateRange = null) => {
 
     console.log("[ReportsService] Found events:", events.length);
 
-    // Manually resolve categories to avoid casting errors
-    const Category = require("../Model/Category");
-    const categoryIds = events
-      .map(e => e.category)
-      .filter(c => c && typeof c === "object" && c._id); // Get actual ObjectIds
-
-    let categoryMap = {};
-    if (categoryIds.length > 0) {
-      const categories = await Category.find({ _id: { $in: categoryIds } }).lean();
-      categoryMap = Object.fromEntries(
-        categories.map(c => [String(c._id), c.name])
-      );
-    }
-
-    // Enhance events with category name
+    // Enhance events with category name directly from stored data.
     events = events.map(e => ({
       ...e,
-      categoryName: categoryMap[String(e.category?._id)] || e.category || "Uncategorized",
+      categoryName: typeof e.category === "string"
+        ? e.category
+        : e.category?.name || e.category?.title || "Uncategorized",
     }));
 
     console.log("[ReportsService] Events with categories resolved:", events.length);
