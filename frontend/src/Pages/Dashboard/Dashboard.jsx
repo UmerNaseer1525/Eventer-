@@ -28,9 +28,12 @@ import {
   List,
   Divider,
   Empty,
+  Spin,
 } from "antd";
-import { useSelector } from "react-redux";
-import { useMemo } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useEffect, useMemo } from "react";
+import { fetchUserDashboard } from "../../Services/dashboardSlice";
+import { getStoredUser } from "../../utils/auth";
 import {
   getApprovedEvents,
   getPaidApprovedBookings,
@@ -271,58 +274,47 @@ function ActivityItem({ event, index }) {
 
 // ── Main Dashboard ──────────────────────────────────────────────────────────────
 function Dashboard() {
-  const events = useSelector((state) => state.event);
-  const bookings = useSelector((state) => state.booking);
-  const payments = useSelector((state) => state.payment);
+  const dispatch = useDispatch();
+  const currentUser = getStoredUser();
+  const dashboard = useSelector((state) => state.dashboard.user);
+  const loading = useSelector((state) => state.dashboard.loading);
+  const error = useSelector((state) => state.dashboard.error);
 
-  const validEvents = useMemo(() => getApprovedEvents(events), [events]);
+  useEffect(() => {
+    if (currentUser?.id) {
+      dispatch(fetchUserDashboard(currentUser.id));
+    }
+  }, [currentUser?.id, dispatch]);
 
-  const paidBookings = useMemo(
-    () => getPaidApprovedBookings(bookings, validEvents),
-    [bookings, validEvents],
-  );
+  const stats = dashboard?.stats || {};
+  const recentEvents = dashboard?.recentEvents || [];
 
-  const completedPayments = useMemo(
-    () => getCompletedApprovedPayments(payments, validEvents),
-    [payments, validEvents],
-  );
+  const totalEvents = stats.totalEvents || 0;
+  const totalBookings = stats.totalBookings || 0;
+  const totalRevenue = stats.totalRevenue || 0;
 
-  const totalEvents = validEvents.length;
-  const upcomingEvents = validEvents.filter(
-    (e) => e.status.toLowerCase() === "upcoming",
-  );
-  const ongoingEvents = validEvents.filter(
-    (e) => e.status.toLowerCase() === "ongoing",
-  );
-  const completedEvents = validEvents.filter(
-    (e) => e.status.toLowerCase() === "completed",
-  );
-  const cancelledEvents = validEvents.filter(
-    (e) => e.status.toLowerCase() === "cancelled",
-  );
-
-  const totalBookings = paidBookings.length;
-  const totalRevenue = useMemo(
-    () => getTotalRevenue(completedPayments, paidBookings),
-    [completedPayments, paidBookings],
-  );
-
-  // Category breakdown
-  const categoryMap = useMemo(() => {
-    const map = {};
-    validEvents.forEach((e) => {
-      map[e.category] = (map[e.category] || 0) + 1;
-    });
-    return Object.entries(map).map(([cat, count]) => ({ cat, count }));
-  }, [validEvents]);
+  const upcomingEvents = stats.upcomingEvents || 0;
+  const ongoingEvents = stats.ongoingEvents || 0;
+  const completedEvents = stats.completedEvents || 0;
+  const cancelledEvents = stats.cancelledEvents || 0;
 
   // Status distribution for mini donut-style bars
   const statusData = [
-    { label: "Upcoming", count: upcomingEvents.length, color: C.blue },
-    { label: "Ongoing", count: ongoingEvents.length, color: C.green },
-    { label: "Completed", count: completedEvents.length, color: C.purple },
-    { label: "Cancelled", count: cancelledEvents.length, color: C.red },
+    { label: "Upcoming", count: upcomingEvents, color: C.blue },
+    { label: "Ongoing", count: ongoingEvents, color: C.green },
+    { label: "Completed", count: completedEvents, color: C.purple },
+    { label: "Cancelled", count: cancelledEvents, color: C.red },
   ];
+
+  // Category breakdown (we can add this to the backend later if needed)
+  const categoryMap = useMemo(() => {
+    const map = {};
+    recentEvents.forEach((e) => {
+      const catName = e.category?.name || e.category || "Other";
+      map[catName] = (map[catName] || 0) + 1;
+    });
+    return Object.entries(map).map(([cat, count]) => ({ cat, count }));
+  }, [recentEvents]);
 
   const catColors = [
     C.blue,
@@ -334,467 +326,514 @@ function Dashboard() {
     C.red,
   ];
 
-  // Recent 6 events for activity feed
-  const recentEvents = useMemo(
-    () => [...validEvents].slice(0, 6),
-    [validEvents],
-  );
-
   // Quick metric cards
   const quickMetrics = [
     {
       label: "Upcoming Events",
-      value: upcomingEvents.length,
+      value: upcomingEvents,
       icon: "🗓️",
       color: C.blue,
     },
     {
       label: "Ongoing Events",
-      value: ongoingEvents.length,
+      value: ongoingEvents,
       icon: "🔴",
       color: C.green,
     },
     {
       label: "Completed Events",
-      value: completedEvents.length,
+      value: completedEvents,
       icon: "✅",
       color: C.purple,
     },
     {
       label: "Cancelled Events",
-      value: cancelledEvents.length,
+      value: cancelledEvents,
       icon: "❌",
       color: C.red,
     },
   ];
 
+  if (loading) {
+    return (
+      <div style={{ padding: "10px", textAlign: "center" }}>
+        <Spin size="large" />
+        <p style={{ marginTop: 16, color: "#888" }}>Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: "10px" }}>
+        <Card
+          style={{
+            borderRadius: 14,
+            marginBottom: 20,
+            borderColor: "#ffccc7",
+            background: "#fff2f0",
+          }}
+        >
+          <Typography.Text style={{ color: "#cf1322", fontWeight: 600 }}>
+            {error}
+          </Typography.Text>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: "10px" }}>
-      {/* ── Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1
-          style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "#1a1a2e" }}
+      {/* ── Loading State */}
+      {loading && (
+        <div style={{ textAlign: "center", padding: "40px" }}>
+          <Spin size="large" />
+          <p style={{ marginTop: 16, color: "#888" }}>Loading dashboard...</p>
+        </div>
+      )}
+
+      {/* ── Error State */}
+      {error && !loading && (
+        <Card
+          style={{
+            borderRadius: 14,
+            marginBottom: 20,
+            borderColor: "#ffccc7",
+            background: "#fff2f0",
+          }}
         >
-          Dashboard
-        </h1>
-        <p style={{ margin: "4px 0 0", color: "#888", fontSize: 14 }}>
-          Welcome back! Here's what's happening with your events.
-        </p>
-      </div>
+          <Typography.Text style={{ color: "#cf1322", fontWeight: 600 }}>
+            {error}
+          </Typography.Text>
+        </Card>
+      )}
 
-      {/* ── KPI Stats */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={12} sm={12} md={6}>
-          <StatCard
-            title="Total Events"
-            value={totalEvents}
-            icon={<CalendarOutlined />}
-            color={C.blue}
-            change={12.5}
-          />
-        </Col>
-        <Col xs={12} sm={12} md={6}>
-          <StatCard
-            title="Total Bookings"
-            value={totalBookings}
-            icon={<TeamOutlined />}
-            color={C.purple}
-            change={8.2}
-          />
-        </Col>
-        <Col xs={12} sm={12} md={6}>
-          <StatCard
-            title="Total Revenue"
-            value={totalRevenue}
-            prefix="$"
-            icon={<DollarOutlined />}
-            color={C.green}
-            change={23.5}
-          />
-        </Col>
-        <Col xs={12} sm={12} md={6}>
-          <StatCard
-            title="Growth Rate"
-            value={23.5}
-            suffix="%"
-            icon={<RiseOutlined />}
-            color={C.orange}
-            change={4.1}
-          />
-        </Col>
-      </Row>
-
-      {/* ── Quick Metric Mini Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        {quickMetrics.map((m) => (
-          <Col key={m.label} xs={12} sm={12} md={6}>
-            <Card
+      {/* ── Main Content (only show if not loading) */}
+      {!loading && (
+        <>
+          {/* ── Header */}
+          <div style={{ marginBottom: 24 }}>
+            <h1
               style={{
-                borderRadius: 14,
-                boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-                textAlign: "center",
-                border: `1px solid ${m.color}22`,
+                margin: 0,
+                fontSize: 26,
+                fontWeight: 800,
+                color: "#1a1a2e",
               }}
             >
-              <div style={{ fontSize: 28 }}>{m.icon}</div>
-              <div
-                style={{
-                  fontSize: 22,
-                  fontWeight: 900,
-                  color: m.color,
-                  margin: "6px 0 4px",
-                }}
-              >
-                {m.value}
-              </div>
-              <div style={{ fontSize: 12, color: "#888" }}>{m.label}</div>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+              Dashboard
+            </h1>
+            <p style={{ margin: "4px 0 0", color: "#888", fontSize: 14 }}>
+              Welcome back! Here's what's happening with your events.
+            </p>
+          </div>
 
-      {/* ── Event Status Breakdown + Category Breakdown */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} md={12}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-              height: "100%",
-            }}
-          >
-            <SectionHeader
-              icon={<FireOutlined />}
-              title="Events by Status"
-              subtitle="Current status breakdown"
-            />
-            {totalEvents === 0 ? (
-              <Empty description="No events yet" />
-            ) : (
-              statusData.map((s) => (
-                <MiniBar
-                  key={s.label}
-                  label={s.label}
-                  count={s.count}
-                  total={totalEvents}
-                  color={s.color}
-                />
-              ))
-            )}
-          </Card>
-        </Col>
+          {/* ── KPI Stats */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={12} sm={12} md={6}>
+              <StatCard
+                title="Total Events"
+                value={totalEvents}
+                icon={<CalendarOutlined />}
+                color={C.blue}
+              />
+            </Col>
+            <Col xs={12} sm={12} md={6}>
+              <StatCard
+                title="Total Bookings"
+                value={totalBookings}
+                icon={<TeamOutlined />}
+                color={C.purple}
+              />
+            </Col>
+            <Col xs={12} sm={12} md={6}>
+              <StatCard
+                title="Total Revenue"
+                value={totalRevenue}
+                prefix="$"
+                icon={<DollarOutlined />}
+                color={C.green}
+              />
+            </Col>
+            <Col xs={12} sm={12} md={6}>
+              <StatCard
+                title="Paid Bookings"
+                value={stats.paidBookings || 0}
+                icon={<CheckCircleOutlined />}
+                color={C.orange}
+              />
+            </Col>
+          </Row>
 
-        <Col xs={24} md={12}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-              height: "100%",
-            }}
-          >
-            <SectionHeader
-              icon={<TrophyOutlined />}
-              title="Events by Category"
-              subtitle="Distribution across types"
-            />
-            {categoryMap.length === 0 ? (
-              <Empty description="No categories yet" />
-            ) : (
-              categoryMap.map(({ cat, count }, i) => (
-                <MiniBar
-                  key={cat}
-                  label={cat}
-                  count={count}
-                  total={totalEvents}
-                  color={catColors[i % catColors.length]}
-                />
-              ))
-            )}
-          </Card>
-        </Col>
-      </Row>
-
-      {/* ── Recent Activity + Upcoming Events */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        {/* Recent Activity */}
-        <Col xs={24} lg={14}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-            }}
-          >
-            <SectionHeader
-              icon={<BellOutlined />}
-              title="Recent Activity"
-              subtitle="Latest event updates"
-            />
-            {recentEvents.length === 0 ? (
-              <Empty description="No recent activity" />
-            ) : (
-              recentEvents.map((event, i) => (
-                <ActivityItem key={event?.id ?? i} event={event} index={i} />
-              ))
-            )}
-          </Card>
-        </Col>
-
-        {/* Upcoming Events list */}
-        <Col xs={24} lg={10}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-              height: "100%",
-            }}
-          >
-            <SectionHeader
-              icon={<ClockCircleOutlined />}
-              title="Upcoming Events"
-              subtitle={`${upcomingEvents.length} events scheduled`}
-            />
-            {upcomingEvents.length === 0 ? (
-              <Empty description="No upcoming events" />
-            ) : (
-              upcomingEvents.slice(0, 5).map((event, i) => (
-                <div
-                  key={event?.id ?? i}
+          {/* ── Quick Metric Mini Cards */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            {quickMetrics.map((m) => (
+              <Col key={m.label} xs={12} sm={12} md={6}>
+                <Card
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: "10px 0",
-                    borderBottom:
-                      i < upcomingEvents.slice(0, 5).length - 1
-                        ? "1px solid #f5f5f5"
-                        : "none",
+                    borderRadius: 14,
+                    boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                    textAlign: "center",
+                    border: `1px solid ${m.color}22`,
                   }}
                 >
+                  <div style={{ fontSize: 28 }}>{m.icon}</div>
                   <div
                     style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 10,
-                      background: C.blue + "15",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: C.blue,
-                      fontSize: 18,
-                      flexShrink: 0,
+                      fontSize: 22,
+                      fontWeight: 900,
+                      color: m.color,
+                      margin: "6px 0 4px",
                     }}
                   >
-                    <CalendarOutlined />
+                    {m.value}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: "#888" }}>
+                    {m.label}
+                  </div>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+
+          {/* ── Event Status Breakdown + Category Breakdown */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24} md={12}>
+              <Card
+                style={{
+                  borderRadius: 14,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                  height: "100%",
+                }}
+              >
+                <SectionHeader
+                  icon={<FireOutlined />}
+                  title="Events by Status"
+                  subtitle="Current status breakdown"
+                />
+                {totalEvents === 0 ? (
+                  <Empty description="No events yet" />
+                ) : (
+                  statusData.map((s) => (
+                    <MiniBar
+                      key={s.label}
+                      label={s.label}
+                      count={s.count}
+                      total={totalEvents}
+                      color={s.color}
+                    />
+                  ))
+                )}
+              </Card>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Card
+                style={{
+                  borderRadius: 14,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                  height: "100%",
+                }}
+              >
+                <SectionHeader
+                  icon={<TrophyOutlined />}
+                  title="Events by Category"
+                  subtitle="Distribution across types"
+                />
+                {categoryMap.length === 0 ? (
+                  <Empty description="No categories yet" />
+                ) : (
+                  categoryMap.map(({ cat, count }, i) => (
+                    <MiniBar
+                      key={cat}
+                      label={cat}
+                      count={count}
+                      total={totalEvents}
+                      color={catColors[i % catColors.length]}
+                    />
+                  ))
+                )}
+              </Card>
+            </Col>
+          </Row>
+
+          {/* ── Recent Activity + Upcoming Events */}
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            {/* Recent Activity */}
+            <Col xs={24} lg={14}>
+              <Card
+                style={{
+                  borderRadius: 14,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                }}
+              >
+                <SectionHeader
+                  icon={<BellOutlined />}
+                  title="Recent Activity"
+                  subtitle="Latest event updates"
+                />
+                {recentEvents.length === 0 ? (
+                  <Empty description="No recent activity" />
+                ) : (
+                  recentEvents.map((event, i) => (
+                    <ActivityItem
+                      key={event?.id ?? i}
+                      event={event}
+                      index={i}
+                    />
+                  ))
+                )}
+              </Card>
+            </Col>
+
+            {/* Upcoming Events list */}
+            <Col xs={24} lg={10}>
+              <Card
+                style={{
+                  borderRadius: 14,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                  height: "100%",
+                }}
+              >
+                <SectionHeader
+                  icon={<ClockCircleOutlined />}
+                  title="Upcoming Events"
+                  subtitle={`${upcomingEvents} events scheduled`}
+                />
+                {totalEvents === 0 ? (
+                  <Empty description="No upcoming events" />
+                ) : (
+                  recentEvents.slice(0, 5).map((event, i) => (
                     <div
+                      key={event?.id ?? i}
                       style={{
-                        fontWeight: 600,
-                        fontSize: 13,
-                        color: "#1a1a2e",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {event?.title}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "#888",
-                        marginTop: 2,
                         display: "flex",
                         alignItems: "center",
-                        gap: 4,
+                        gap: 12,
+                        padding: "10px 0",
+                        borderBottom:
+                          i < recentEvents.slice(0, 5).length - 1
+                            ? "1px solid #f5f5f5"
+                            : "none",
                       }}
                     >
-                      <EnvironmentOutlined style={{ fontSize: 11 }} />
-                      {event?.location}
-                    </div>
-                  </div>
-                  <Tag
-                    color="purple"
-                    style={{ borderRadius: 6, fontSize: 11, fontWeight: 500 }}
-                  >
-                    {event?.category}
-                  </Tag>
-                </div>
-              ))
-            )}
-          </Card>
-        </Col>
-      </Row>
-
-      {/* ── Booking Summary + Organizer Highlights */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={12}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-            }}
-          >
-            <SectionHeader
-              icon={<TeamOutlined />}
-              title="Booking Overview"
-              subtitle="Bookings made per event"
-            />
-            {validEvents.length === 0 ? (
-              <Empty description="No events" />
-            ) : (
-              validEvents.slice(0, 6).map((event, i) => {
-                const eventBookings = Array.isArray(bookings)
-                  ? bookings.filter(
-                      (b) => b?.eventId === event?.id || b?.id === event?.id,
-                    ).length
-                  : 0;
-                const guests = event?.number_of_guests || 100;
-                const pct = Math.min(
-                  100,
-                  Math.round((eventBookings / guests) * 100),
-                );
-                return (
-                  <div
-                    key={event?.id ?? i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      marginBottom: 10,
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 110,
-                        fontSize: 12,
-                        color: "#555",
-                        flexShrink: 0,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {event?.title}
-                    </span>
-                    <Progress
-                      percent={pct}
-                      showInfo={false}
-                      strokeColor={
-                        pct > 70 ? C.green : pct > 40 ? C.blue : C.gold
-                      }
-                      trailColor="#f5f5f5"
-                      style={{ flex: 1, marginBottom: 0 }}
-                    />
-                    <span
-                      style={{
-                        width: 32,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: "#555",
-                        textAlign: "right",
-                      }}
-                    >
-                      {pct}%
-                    </span>
-                  </div>
-                );
-              })
-            )}
-          </Card>
-        </Col>
-
-        <Col xs={24} md={12}>
-          <Card
-            style={{
-              borderRadius: 14,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
-            }}
-          >
-            <SectionHeader
-              icon={<UserOutlined />}
-              title="Top Organizers"
-              subtitle="Most active event organizers"
-            />
-            {validEvents.length === 0 ? (
-              <Empty description="No organizer data" />
-            ) : (
-              (() => {
-                const orgMap = {};
-                validEvents.forEach((e) => {
-                  const org = e?.organizer ?? "Unknown";
-                  orgMap[org] = (orgMap[org] || 0) + 1;
-                });
-                const sorted = Object.entries(orgMap)
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 5);
-                const max = sorted[0]?.[1] || 1;
-
-                return sorted.map(([org, count], i) => (
-                  <div
-                    key={org}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: "8px 0",
-                      borderBottom:
-                        i < sorted.length - 1 ? "1px solid #f5f5f5" : "none",
-                    }}
-                  >
-                    <Avatar
-                      size={34}
-                      style={{
-                        background: catColors[i % catColors.length] + "20",
-                        color: catColors[i % catColors.length],
-                        fontWeight: 700,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {org[0]?.toUpperCase()}
-                    </Avatar>
-                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div
                         style={{
-                          fontWeight: 600,
-                          fontSize: 13,
-                          color: "#1a1a2e",
+                          width: 42,
+                          height: 42,
+                          borderRadius: 10,
+                          background: C.blue + "15",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: C.blue,
+                          fontSize: 18,
+                          flexShrink: 0,
                         }}
                       >
-                        {org}
+                        <CalendarOutlined />
                       </div>
-                      <Progress
-                        percent={Math.round((count / max) * 100)}
-                        showInfo={false}
-                        strokeColor={catColors[i % catColors.length]}
-                        trailColor="#f5f5f5"
-                        size="small"
-                        style={{ marginBottom: 0, marginTop: 4 }}
-                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            fontSize: 13,
+                            color: "#1a1a2e",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {event?.title}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "#888",
+                            marginTop: 2,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          <EnvironmentOutlined style={{ fontSize: 11 }} />
+                          {event?.location}
+                        </div>
+                      </div>
+                      <Tag
+                        color="purple"
+                        style={{
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {event?.category?.name || event?.category}
+                      </Tag>
                     </div>
-                    <Tag
-                      color={
-                        catColors[i % catColors.length] === C.red
-                          ? "red"
-                          : "default"
-                      }
+                  ))
+                )}
+              </Card>
+            </Col>
+          </Row>
+
+          {/* ── Booking Summary + Top Events */}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <Card
+                style={{
+                  borderRadius: 14,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                }}
+              >
+                <SectionHeader
+                  icon={<TeamOutlined />}
+                  title="Recent Bookings"
+                  subtitle="Latest bookings for your events"
+                />
+                {dashboard?.recentBookings?.length === 0 ? (
+                  <Empty description="No bookings" />
+                ) : (
+                  (dashboard?.recentBookings || []).slice(0, 5).map((b, i) => (
+                    <div
+                      key={b?.id ?? i}
                       style={{
-                        borderRadius: 6,
-                        fontWeight: 700,
-                        background: catColors[i % catColors.length] + "15",
-                        color: catColors[i % catColors.length],
-                        border: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "10px 0",
+                        borderBottom:
+                          i <
+                          Math.min(5, (dashboard?.recentBookings || []).length) -
+                            1
+                            ? "1px solid #f5f5f5"
+                            : "none",
                       }}
                     >
-                      {count} event{count !== 1 ? "s" : ""}
-                    </Tag>
-                  </div>
-                ));
-              })()
-            )}
-          </Card>
-        </Col>
-      </Row>
+                      <Avatar
+                        size={34}
+                        style={{
+                          background: C.purple + "20",
+                          color: C.purple,
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {b?.attendee?.firstName?.[0]?.toUpperCase() || "B"}
+                      </Avatar>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            fontSize: 13,
+                            color: "#1a1a2e",
+                          }}
+                        >
+                          {b?.attendee?.firstName +
+                            " " +
+                            b?.attendee?.lastName}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "#888",
+                            marginTop: 2,
+                          }}
+                        >
+                          for {b?.event?.title}
+                        </div>
+                      </div>
+                      <Tag color="blue" style={{ borderRadius: 6 }}>
+                        {b?.paymentStatus || "pending"}
+                      </Tag>
+                    </div>
+                  ))
+                )}
+              </Card>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Card
+                style={{
+                  borderRadius: 14,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+                }}
+              >
+                <SectionHeader
+                  icon={<CalendarOutlined />}
+                  title="Your Recent Events"
+                  subtitle="Latest events you created"
+                />
+                {recentEvents.length === 0 ? (
+                  <Empty description="No events yet" />
+                ) : (
+                  recentEvents.slice(0, 5).map((e, i) => (
+                    <div
+                      key={e?.id ?? i}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "10px 0",
+                        borderBottom:
+                          i < Math.min(5, recentEvents.length) - 1
+                            ? "1px solid #f5f5f5"
+                            : "none",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 10,
+                          background: C.green + "15",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: C.green,
+                          fontSize: 18,
+                          flexShrink: 0,
+                        }}
+                      >
+                        🎉
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            fontSize: 13,
+                            color: "#1a1a2e",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {e?.title}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "#888",
+                            marginTop: 2,
+                          }}
+                        >
+                          {e?.status || "—"}
+                        </div>
+                      </div>
+                      <Tag
+                        color={e?.status === "published" ? "green" : "orange"}
+                        style={{ borderRadius: 6, fontSize: 11 }}
+                      >
+                        {e?.status}
+                      </Tag>
+                    </div>
+                  ))
+                )}
+              </Card>
+            </Col>
+          </Row>
+        </>
+      )}
     </div>
   );
 }
