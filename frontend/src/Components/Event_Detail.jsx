@@ -26,7 +26,61 @@ const statusColors = {
   Cancelled: "red",
 };
 
-export default function Event_Detail({ open, onClose, onBook, event }) {
+function formatCategory(category) {
+  if (!category) {
+    return "-";
+  }
+
+  if (typeof category === "string") {
+    return category;
+  }
+
+  return category.name || category.title || category.label || "-";
+}
+
+function formatOrganizer(organizer) {
+  if (!organizer) {
+    return "-";
+  }
+
+  if (typeof organizer === "string") {
+    return organizer;
+  }
+
+  const fullName = [organizer.firstName, organizer.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return fullName || organizer.email || organizer.phone || organizer.name || "-";
+}
+
+function formatDate(dateValue) {
+  if (!dateValue) {
+    return "-";
+  }
+
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) {
+    return String(dateValue);
+  }
+
+  return date.toLocaleDateString("en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+}
+
+function formatTime(timeValue) {
+  if (!timeValue) {
+    return "";
+  }
+
+  return String(timeValue).trim();
+}
+
+export default function Event_Detail({ open, onClose, event }) {
   if (!event) return null;
   const remainingSeats = Math.max(
     0,
@@ -42,7 +96,7 @@ export default function Event_Detail({ open, onClose, onBook, event }) {
             {event.title}
           </Typography.Title>
           <Space>
-            <Tag color="purple">{event.category}</Tag>
+            <Tag color="purple">{formatCategory(event.category)}</Tag>
             <Badge
               color={statusColors[event.status] || "default"}
               text={event.status}
@@ -79,7 +133,8 @@ export default function Event_Detail({ open, onClose, onBook, event }) {
               </span>
             }
           >
-            {event.date || "-"} {event.time ? `/ ${event.time}` : null}
+            {formatDate(event.date)}
+            {formatTime(event.time) ? ` / ${formatTime(event.time)}` : null}
           </Descriptions.Item>
           <Descriptions.Item
             label={
@@ -97,7 +152,7 @@ export default function Event_Detail({ open, onClose, onBook, event }) {
               </span>
             }
           >
-            {event.organizer || "-"}
+            {formatOrganizer(event.organizer)}
           </Descriptions.Item>
           <Descriptions.Item
             label={
@@ -123,7 +178,7 @@ export default function Event_Detail({ open, onClose, onBook, event }) {
         <Typography.Paragraph style={{ minHeight: 60 }}>
           {event.description || "No description provided."}
         </Typography.Paragraph>
-        {onBook ? (
+        {/* {onBook ? (
           <Button
             type="primary"
             block
@@ -133,7 +188,7 @@ export default function Event_Detail({ open, onClose, onBook, event }) {
           >
             {remainingSeats <= 0 ? "Sold Out" : "Book Now"}
           </Button>
-        ) : null}
+        ) : null} */}
       </div>
     </Drawer>
   );

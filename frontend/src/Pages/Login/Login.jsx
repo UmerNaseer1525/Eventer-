@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import style from "./login.module.css";
 import { useState } from "react";
 import { validateUser } from "../../Services/userService";
-import { getCurrentRole } from "../../utils/auth";
 
 function Login() {
   const [api, contextHolder] = notification.useNotification();
@@ -30,7 +29,14 @@ function Login() {
       });
 
       setTimeout(() => {
-        const role = getCurrentRole();
+        let user = null;
+        try {
+          user = JSON.parse(localStorage.getItem("user") || "null");
+        } catch (_error) {
+          user = null;
+        }
+        const role =
+          String(user?.role || "").toLowerCase() === "admin" ? "admin" : "user";
         navigate(role === "admin" ? "/admin-dashboard" : "/dashboard");
       }, 1000);
     } catch (error) {

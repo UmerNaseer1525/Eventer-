@@ -29,8 +29,11 @@ const userSchema = new mongoose.Schema({
 
   role: {
     type: String,
-    enum: ["organizer", "attendee", "admin"],
+    enum: ["admin", "user"],
     required: true,
+    default: "user",
+    set: (role) =>
+      String(role || "").toLowerCase() === "admin" ? "admin" : "user",
   },
 
   phone: {

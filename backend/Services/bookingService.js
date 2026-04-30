@@ -2,70 +2,96 @@ const Booking = require("../Model/Booking");
 
 const getAllBookings = async () => {
   return await Booking.find({})
-    .populate("attendee", "firstName lastName email phone")
+    .populate("attendee", "-_id firstName lastName email phone")
     .populate({
       path: "event",
-      select: "title location date time bannerImage ticketPrice",
+      select: "-_id title category location date time bannerImage ticketPrice capacity status",
       populate: {
         path: "organizer",
-        select: "firstName lastName email",
+        select: "-_id firstName lastName email phone",
       },
     });
 };
 
 const getBookingById = async (bookingId) => {
   return await Booking.findById(bookingId)
-    .populate("attendee", "firstName lastName email phone profileImage")
+    .populate("attendee", "-_id firstName lastName email phone profileImage")
     .populate({
       path: "event",
       select:
-        "title description location date time bannerImage ticketPrice capacity",
+        "-_id title description category location date time bannerImage ticketPrice capacity status",
       populate: {
         path: "organizer",
-        select: "firstName lastName email phone",
+        select: "-_id firstName lastName email phone",
       },
     });
 };
 
 const getBookingsByEvent = async (eventId) => {
   return await Booking.find({ event: eventId })
-    .populate("attendee", "firstName lastName email phone")
-    .populate("event", "title location date time");
+    .populate("attendee", "-_id firstName lastName email phone")
+    .populate({
+      path: "event",
+      select: "-_id title category location date time bannerImage ticketPrice capacity status",
+      populate: {
+        path: "organizer",
+        select: "-_id firstName lastName email phone",
+      },
+    });
 };
 
 const getBookingsByAttendee = async (attendeeId) => {
-  return await Booking.find({ attendee: attendeeId }).populate({
-    path: "event",
-    select: "title location date time bannerImage ticketPrice",
-    populate: {
-      path: "organizer",
-      select: "firstName lastName email",
-    },
-  });
+  return await Booking.find({ attendee: attendeeId })
+    .populate("attendee", "-_id firstName lastName email phone")
+    .populate({
+      path: "event",
+      select: "-_id title category location date time bannerImage ticketPrice status",
+      populate: {
+        path: "organizer",
+        select: "-_id firstName lastName email phone",
+      },
+    });
 };
 
 const getBookingsByPaymentStatus = async (paymentStatus) => {
   return await Booking.find({ paymentStatus: paymentStatus })
-    .populate("attendee", "firstName lastName email phone")
+    .populate("attendee", "-_id firstName lastName email phone")
     .populate({
       path: "event",
-      select: "title location date time",
+      select: "-_id title category location date time bannerImage ticketPrice capacity status",
       populate: {
         path: "organizer",
-        select: "firstName lastName email",
+        select: "-_id firstName lastName email phone",
       },
     });
 };
 
 const getBookingsByTicketType = async (ticketType) => {
   return await Booking.find({ ticketType: ticketType })
-    .populate("attendee", "firstName lastName email")
-    .populate("event", "title location date time");
+    .populate("attendee", "-_id firstName lastName email")
+    .populate({
+      path: "event",
+      select: "-_id title location date time bannerImage",
+      populate: {
+        path: "organizer",
+        select: "-_id firstName lastName email phone",
+      },
+    });
 };
 
 const createBooking = async (bookingData) => {
   const booking = new Booking(bookingData);
-  return await booking.save();
+  await booking.save();
+  return await Booking.findById(booking._id)
+    .populate("attendee", "-_id firstName lastName email phone")
+    .populate({
+      path: "event",
+      select: "-_id title category location date time bannerImage ticketPrice capacity status",
+      populate: {
+        path: "organizer",
+        select: "-_id firstName lastName email phone",
+      },
+    });
 };
 
 const deleteBooking = async (bookingId) => {
@@ -73,14 +99,34 @@ const deleteBooking = async (bookingId) => {
 };
 
 const updateBooking = async (bookingId, updateData) => {
-  return await Booking.updateOne({ _id: bookingId }, { $set: updateData });
+  await Booking.updateOne({ _id: bookingId }, { $set: updateData });
+  return await Booking.findById(bookingId)
+    .populate("attendee", "-_id firstName lastName email phone")
+    .populate({
+      path: "event",
+      select: "-_id title category location date time bannerImage ticketPrice capacity status",
+      populate: {
+        path: "organizer",
+        select: "-_id firstName lastName email phone",
+      },
+    });
 };
 
 const updatePaymentStatus = async (bookingId, paymentStatus) => {
-  return await Booking.updateOne(
+  await Booking.updateOne(
     { _id: bookingId },
     { $set: { paymentStatus: paymentStatus } },
   );
+  return await Booking.findById(bookingId)
+    .populate("attendee", "-_id firstName lastName email phone")
+    .populate({
+      path: "event",
+      select: "-_id title category location date time bannerImage ticketPrice capacity status",
+      populate: {
+        path: "organizer",
+        select: "-_id firstName lastName email phone",
+      },
+    });
 };
 
 const updateQuantity = async (bookingId, quantity) => {

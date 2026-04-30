@@ -23,15 +23,15 @@ import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import CreateEvent from "../../Components/CreateEvent";
 import EditEvent from "../../Components/EditEvent";
-import { deleteEvent, updateStatus } from "../../Services/eventSlice";
+import { deleteEventAsync, getAllEvents, updateEventStatusAsync } from "../../Services/eventSlice";
 import Event_Detail from "../../Components/Event_Detail";
 import EventApprovalQueue from "../../Components/EventApprovalQueue";
-import { isEventApproved } from "../../utils/eventApproval";
+import { useEffect } from "react";
 
 function MyEvents() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const events = useSelector((state) => state.event);
+  const eventsData = useSelector((state) => state.event.eventsData);
   const dispatch = useDispatch();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -42,6 +42,9 @@ function MyEvents() {
   const [isEventApprovalQueueOpen, setIsEventApprovalQueueOpen] =
     useState(false);
 
+    useEffect(() => {
+        dispatch(getAllEvents());
+      }, [dispatch]);
   function onSearchFilter(e) {
     setSearch(e.target.value);
   }
@@ -51,30 +54,28 @@ function MyEvents() {
   }
 
   function handleStatusChange(eventId, value) {
-    dispatch(updateStatus({ id: eventId, status: value }));
+    console.log(eventId, value)
+    dispatch(updateEventStatusAsync({ id: eventId, status: value }));
   }
 
-  const filteredEvents = Array.isArray(events)
-    ? events
-        .filter(
-          (event) =>
-            event &&
-            typeof event.title === "string" &&
-            typeof event.status === "string" &&
-            typeof event.location === "string" &&
-            typeof event.category === "string" &&
-            event.bannerImage &&
-            isEventApproved(event),
-        )
-        .filter((event) => {
-          const matchesTitle = event.title
-            .toLowerCase()
-            .includes(search.toLowerCase());
-          const matchesStatus =
-            status === "all" ? true : event.status.toLowerCase() === status;
-          return matchesTitle && matchesStatus;
-        })
-    : [];
+  const filteredEvents = (Array.isArray(eventsData) ? eventsData : [])
+    .filter(
+      (event) =>
+        event &&
+        typeof event.title === "string" &&
+        typeof event.status === "string" &&
+        typeof event.location === "string" &&
+        typeof event.category === "string" &&
+        event.bannerImage,
+    )
+    .filter((event) => {
+      const matchesTitle = event.title
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      const matchesStatus =
+        status === "all" ? true : event.status.toLowerCase() === status;
+      return matchesTitle && matchesStatus;
+    });
 
   return (
     <div style={{ padding: "10px" }}>
@@ -136,7 +137,7 @@ function MyEvents() {
           filteredEvents.map((event) => {
             return (
               <Col
-                key={event.id}
+                key={event._id}
                 xs={24}
                 sm={12}
                 md={12}
@@ -231,7 +232,7 @@ function MyEvents() {
                       title="Delete Event"
                       description="Are You Sure?"
                       onConfirm={() => {
-                        dispatch(deleteEvent({ id: event.id }));
+                        dispatch(deleteEventAsync(event._id));
                       }}
                       okText="Delete"
                       canelText="No"
@@ -263,13 +264,13 @@ function MyEvents() {
                       {event.title}
                     </span>
                     <Select
-                      defaultValue={event.status}
-                      onChange={(value) => handleStatusChange(event.id, value)}
+                      value={String(event.status || "").toLowerCase()}
+                      onChange={(value) => handleStatusChange(event._id, value)}
                       options={[
-                        { label: "Upcoming", value: "Upcoming" },
-                        { label: "Ongoing", value: "Ongoing" },
-                        { label: "Cancelled", value: "Cancelled" },
-                        { label: "Completed", value: "Completed" },
+                        { label: "Upcoming", value: "upcoming" },
+                        { label: "Ongoing", value: "ongoing" },
+                        { label: "Cancelled", value: "cancelled" },
+                        { label: "Completed", value: "completed" },
                       ]}
                     />
                   </div>

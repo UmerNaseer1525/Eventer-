@@ -2,7 +2,7 @@ import { Provider } from "react-redux";
 import store from "./store";
 
 import MyEvents from "./Pages/Events/MyEvents";
-import EventDetails from "./Pages/Events/EventDetails";
+import EventDetails from "./Components/Event_Detail";
 import Attendees from "./Pages/Events/Attendees";
 import Analytics from "./Pages/Analytics/Analytics";
 import AdminDashboard from "./Pages/Dashboard/AdminDashboard";

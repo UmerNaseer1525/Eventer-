@@ -19,12 +19,6 @@ import {
   buildTimelineData,
   toNumber,
 } from "../../Components/Insights/insightUtils";
-import {
-  getApprovedEvents,
-  getPaidApprovedBookings,
-  getCompletedApprovedPayments,
-  getTotalRevenue,
-} from "../../utils/insightScope";
 
 function Reports() {
   const events = useSelector((state) =>
@@ -37,16 +31,66 @@ function Reports() {
     Array.isArray(state.payment) ? state.payment : [],
   );
 
-  const approvedEvents = useMemo(() => getApprovedEvents(events), [events]);
+  const approvedEvents = useMemo(
+    () =>
+      events.filter((event) =>
+        ["approved", "true"].includes(
+          String(event?.isApproved ?? "").toLowerCase(),
+        ),
+      ),
+    [events],
+  );
+
+  const approvedEventKeys = useMemo(() => {
+    const keys = new Set();
+    approvedEvents.forEach((event) => {
+      keys.add(String(event?._id ?? ""));
+      keys.add(String(event?.id ?? ""));
+      keys.add(String(event?.title ?? ""));
+      keys.add(String(event?.name ?? ""));
+    });
+    return keys;
+  }, [approvedEvents]);
 
   const paidBookings = useMemo(
-    () => getPaidApprovedBookings(bookings, approvedEvents),
-    [bookings, approvedEvents],
+    () =>
+      bookings.filter((booking) => {
+        const paymentStatus = String(
+          booking?.paymentStatus ?? booking?.status ?? "",
+        ).toLowerCase();
+
+        const isPaid = paymentStatus === "paid" || paymentStatus === "completed";
+        if (!isPaid) {
+          return false;
+        }
+
+        return [
+          String(booking?.eventId ?? ""),
+          String(booking?.eventName ?? ""),
+          String(booking?.title ?? ""),
+          String(booking?.name ?? ""),
+        ].some((key) => approvedEventKeys.has(key));
+      }),
+    [bookings, approvedEventKeys],
   );
 
   const completedPayments = useMemo(
-    () => getCompletedApprovedPayments(payments, approvedEvents),
-    [payments, approvedEvents],
+    () =>
+      payments.filter((payment) => {
+        const status = String(payment?.status ?? "").toLowerCase();
+        const isCompleted =
+          status === "completed" || status === "paid" || status === "success";
+        if (!isCompleted) {
+          return false;
+        }
+
+        return [
+          String(payment?.eventId ?? ""),
+          String(payment?.eventName ?? ""),
+          String(payment?.title ?? ""),
+        ].some((key) => approvedEventKeys.has(key));
+      }),
+    [payments, approvedEventKeys],
   );
 
   const displayData = useMemo(
@@ -64,7 +108,21 @@ function Reports() {
   const totalBookings = paidBookings.length;
 
   const totalRevenue = useMemo(
-    () => getTotalRevenue(completedPayments, paidBookings),
+    () => {
+      const paymentTotal = completedPayments.reduce(
+        (sum, item) => sum + toNumber(item?.amount),
+        0,
+      );
+
+      if (paymentTotal > 0) {
+        return paymentTotal;
+      }
+
+      return paidBookings.reduce(
+        (sum, item) => sum + toNumber(item?.amount ?? item?.price ?? 0),
+        0,
+      );
+    },
     [completedPayments, paidBookings],
   );
 

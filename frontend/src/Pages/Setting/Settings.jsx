@@ -16,7 +16,6 @@ import { useDispatch, useSelector } from "react-redux";
 import styles from "./setting.module.css";
 import { updateUserRecord } from "../../Services/userSlice";
 import { addUnblockRequest } from "../../Services/requestSlice";
-import { getStoredUser, isBlockedUser } from "../../utils/auth";
 
 const USER_BASE_URL = "http://localhost:3000/api/users";
 const BACKEND_BASE_URL = "http://localhost:3000";
@@ -45,7 +44,13 @@ function Settings() {
     Array.isArray(state.request) ? state.request : [],
   );
 
-  const currentUser = useMemo(() => getStoredUser(), []);
+  const currentUser = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch (_error) {
+      return null;
+    }
+  }, []);
   const hasPendingUnblockRequest = useMemo(
     () =>
       requests.some(
@@ -228,7 +233,7 @@ function Settings() {
     <Spin spinning={isLoading} description="Loading">
       <div className={styles.settingsPage}>
         <h1 className={styles.title}>Settings</h1>
-        {isBlockedUser({ status: accountStatus }) ? (
+        {String(accountStatus || "").toLowerCase() === "blocked" ? (
           <Card className={styles.settingCard}>
             {contextHolder}
             <Alert

@@ -11,21 +11,27 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
 import EditEvent from "./EditEvent";
-import { updateApprovedStatus } from "../Services/eventSlice";
+import { resetApprovalAsync } from "../Services/eventSlice";
 import { addRequest } from "../Services/requestSlice";
-import {
-  isEventInApprovalQueue,
-  normalizeApprovalStatus,
-} from "../utils/eventApproval";
 
 function EventApprovalQueue({ open, onClose }) {
-  const events = useSelector((state) => state.event);
+  const pendingEvents = useSelector((state) => state.event.pendingAprovalEvents);
+  const rejectedEvents = useSelector((state) => state.event.rejectedEvents);
   const dispatch = useDispatch();
   const [editModal, setEditModal] = useState({ open: false, event: null });
 
-  const queue = Array.isArray(events)
-    ? events.filter((event) => event && isEventInApprovalQueue(event))
-    : [];
+  const allPendingAndRejected = [
+    ...(Array.isArray(pendingEvents) ? pendingEvents : []),
+    ...(Array.isArray(rejectedEvents) ? rejectedEvents : []),
+  ];
+
+  const queue = allPendingAndRejected.filter((event) => {
+    if (!event) {
+      return false;
+    }
+    const value = String(event?.isApproved ?? "").toLowerCase();
+    return value === "" || value === "pending" || value === "rejected";
+  });
 
   const handleRequestAgain = (eventId) => {
     dispatch(
@@ -35,7 +41,7 @@ function EventApprovalQueue({ open, onClose }) {
         status: "pending",
       }),
     );
-    dispatch(updateApprovedStatus({ id: eventId }));
+    dispatch(resetApprovalAsync(eventId));
   };
 
   return (
@@ -54,10 +60,16 @@ function EventApprovalQueue({ open, onClose }) {
             itemLayout="vertical"
             dataSource={queue}
             renderItem={(event) => {
-              const approvalStatus = normalizeApprovalStatus(event);
+              const value = String(event?.isApproved ?? "").toLowerCase();
+              const approvalStatus =
+                value === "rejected"
+                  ? "Rejected"
+                  : value === "approved" || value === "true"
+                    ? "Approved"
+                    : "Pending";
 
               return (
-                <List.Item key={event.id}>
+                <List.Item key={event._id}>
                   <List.Item.Meta
                     title={
                       <Space>
@@ -101,7 +113,7 @@ function EventApprovalQueue({ open, onClose }) {
                       <Space>
                         <Button
                           type="primary"
-                          onClick={() => handleRequestAgain(event.id)}
+                          onClick={() => handleRequestAgain(event._id)}
                         >
                           Request Again
                         </Button>

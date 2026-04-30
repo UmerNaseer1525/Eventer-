@@ -12,14 +12,20 @@ import { Menu, Button } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
 import { logout } from "../Services/userService";
 import style from "./sidebar.module.css";
-import { getStoredUser, isBlockedUser, normalizeRole } from "../utils/auth";
 
 function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = getStoredUser();
-  const role = normalizeRole(user?.role);
-  const blocked = role === "user" && isBlockedUser(user);
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem("user") || "null");
+  } catch (_error) {
+    user = null;
+  }
+  const role =
+    String(user?.role || "").toLowerCase() === "admin" ? "admin" : "user";
+  const blocked =
+    role === "user" && String(user?.status || "").toLowerCase() === "blocked";
 
   const adminItems = [
     {

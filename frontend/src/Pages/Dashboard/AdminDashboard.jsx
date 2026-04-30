@@ -36,13 +36,6 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect, useMemo } from "react";
 import { fetchAdminDashboard } from "../../Services/dashboardSlice";
-import { buildTimelineData } from "../../Components/Insights/insightUtils";
-import {
-  getApprovedEvents,
-  getPaidApprovedBookings,
-  getCompletedApprovedPayments,
-  getTotalRevenue,
-} from "../../utils/insightScope";
 const { Text } = Typography;
 
 // ── Color Palette ──────────────────────────────────────────────────────────────

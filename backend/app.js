@@ -3,7 +3,6 @@ const express = require("express");
 const cors = require("cors");
 const { connectDB } = require("./Database/db");
 const userRoute = require("./Routes/userRoutes");
-const categoryRoute = require("./Routes/categoryRoutes");
 const eventRoutes = require("./Routes/eventRoutes");
 const bookingRoutes = require("./Routes/bookingRoutes");
 const paymentRoutes = require("./Routes/paymentRoutes");
@@ -24,7 +23,6 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/users", userRoute);
-app.use("/api/categories", categoryRoute);
 app.use("/api/events", eventRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);

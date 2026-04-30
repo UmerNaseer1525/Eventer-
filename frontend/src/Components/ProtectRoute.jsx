@@ -1,18 +1,24 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { getStoredUser, isBlockedUser, normalizeRole } from "../utils/auth";
 
 function ProtectRoute({ allowedRoles = [] }) {
   const location = useLocation();
   const token = localStorage.getItem("token");
-  const user = getStoredUser();
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem("user") || "null");
+  } catch (_error) {
+    user = null;
+  }
 
   if (!token) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  const role = normalizeRole(user?.role);
+  const role =
+    String(user?.role || "").toLowerCase() === "admin" ? "admin" : "user";
   const homePath = role === "admin" ? "/admin-dashboard" : "/dashboard";
-  const blocked = role === "user" && isBlockedUser(user);
+  const blocked =
+    role === "user" && String(user?.status || "").toLowerCase() === "blocked";
   if (blocked && location.pathname !== "/settings") {
     return <Navigate to="/settings" replace />;
   }
@@ -22,7 +28,7 @@ function ProtectRoute({ allowedRoles = [] }) {
   }
 
   const normalizedAllowedRoles = allowedRoles.map((item) =>
-    normalizeRole(item),
+    String(item || "").toLowerCase() === "admin" ? "admin" : "user",
   );
   if (!normalizedAllowedRoles.includes(role)) {
     return <Navigate to={homePath} replace />;

@@ -1,53 +1,60 @@
 import { Row, Col, Empty, notification } from "antd";
 import { useSelector, useDispatch } from "react-redux";
-import { useMemo, useState } from "react";
-import { updateBooking } from "../../Services/bookingSlice";
-import { updateEvent } from "../../Services/eventSlice";
+import { useEffect, useMemo, useState } from "react";
+import { getAllBookings, deleteBookingAsync } from "../../Services/bookingSlice";
+import { updateEventAsync } from "../../Services/eventSlice";
 import BookingCard from "../../Components/BookingCard";
 import BookingDetailModal from "../../Components/BookingDetailModal";
 
 function ManageBookings() {
   const dispatch = useDispatch();
   const reduxBookings = useSelector((state) => state.booking);
-  const events = useSelector((state) => state.event);
+  const events = useSelector((state) => state.event.eventsData);
 
   const visibleBookings = useMemo(() => {
     const bookings = Array.isArray(reduxBookings) ? reduxBookings : [];
     return bookings.filter((booking) => {
-      const isConfirmedPayment = booking?.paymentStatus === "Paid";
-      return isConfirmedPayment && booking && booking.name && booking.cover;
+      const isConfirmedPayment =
+        String(booking?.paymentStatus || "").toLowerCase() === "paid";
+      return isConfirmedPayment && booking && booking.event;
     });
   }, [reduxBookings]);
 
   const [detailItem, setDetailItem] = useState(null);
 
+  useEffect(() => {
+    dispatch(getAllBookings());
+  }, [dispatch]);
+
   function releaseSeatsToEvent(booking) {
-    const eventId = booking.eventId ?? booking.id;
-    const event = Array.isArray(events)
-      ? events.find((item) => String(item.id) === String(eventId))
+    const event = booking?.event;
+    const eventId = event?._id || event?.id || booking.eventId || booking.event;
+    const targetEvent = Array.isArray(events)
+      ? events.find((item) => String(item._id || item.id) === String(eventId))
       : null;
 
-    if (!event) return;
+    if (!targetEvent) return;
 
     const releasedSeats = Math.max(
       1,
-      Number(booking.reservedSeats ?? booking.number_of_guests ?? 1),
+      Number(booking.quantity ?? booking.reservedSeats ?? booking.number_of_guests ?? 1),
     );
     const currentSeats = Math.max(
       0,
       Number(
-        event.remainingSeats ?? event.number_of_guests ?? event.capacity ?? 0,
+        targetEvent.remainingSeats ?? targetEvent.number_of_guests ?? targetEvent.capacity ?? 0,
       ),
     );
     const capacity = Math.max(
       currentSeats,
-      Number(event.capacity ?? currentSeats),
+      Number(targetEvent.capacity ?? currentSeats),
     );
     const nextSeats = Math.min(capacity, currentSeats + releasedSeats);
 
     dispatch(
-      updateEvent({
-        ...event,
+      updateEventAsync({
+        ...targetEvent,
+        _id: targetEvent._id || targetEvent.id,
         remainingSeats: nextSeats,
         number_of_guests: nextSeats,
       }),
@@ -55,20 +62,12 @@ function ManageBookings() {
   }
 
   function handleCancelSeat(booking) {
-    dispatch(
-      updateBooking({
-        ...booking,
-        status: "Cancelled",
-        paymentStatus:
-          booking.paymentStatus === "Paid" ? "Refunded" : booking.paymentStatus,
-      }),
-    );
-
+    dispatch(deleteBookingAsync(booking._id || booking.id));
     releaseSeatsToEvent(booking);
 
     notification.success({
       message: "Seat Cancelled",
-      description: `Seat released for ${booking.name} and is now available to others.`,
+      description: `Booking deleted for ${booking.event.title} and seats released.`,
     });
   }
 

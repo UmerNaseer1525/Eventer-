@@ -1,7 +1,7 @@
 import { Form, Input, Modal, Select, Button, notification } from "antd";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { updateEvent } from "../Services/eventSlice";
+import { updateEventAsync } from "../Services/eventSlice";
 
 export default function EditEvent({ isOpen, onModalClose, record }) {
   const [form] = Form.useForm();
@@ -24,7 +24,7 @@ export default function EditEvent({ isOpen, onModalClose, record }) {
         ...values,
       };
 
-      dispatch(updateEvent(updated_event));
+      dispatch(updateEventAsync(updated_event));
       notification.success({
         message: "Event Updated",
         description: "Your event has been successfully updated.",

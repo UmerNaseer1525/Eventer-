@@ -14,16 +14,20 @@ const STATUS_COLOR = {
 };
 
 const PAY_STATUS_CONFIG = {
-  Paid: { color: "success", text: "Paid" },
-  Unpaid: { color: "warning", text: "Unpaid" },
-  Refunded: { color: "default", text: "Refunded" },
+  paid: { color: "success", text: "Paid" },
+  pending: { color: "warning", text: "Pending" },
+  failed: { color: "default", text: "Failed" },
 };
 
 function BookingDetailModal({ booking, open, onClose }) {
   if (!booking) return null;
 
-  const payCfg =
-    PAY_STATUS_CONFIG[booking.paymentStatus] || PAY_STATUS_CONFIG.Unpaid;
+  const event = booking.event;
+  const attendee = booking.attendee;
+  const organizer = event.organizer;
+  
+  const paymentKey = String(booking.paymentStatus).toLowerCase();
+  const payCfg = PAY_STATUS_CONFIG[paymentKey] || PAY_STATUS_CONFIG.pending;
 
   return (
     <Modal
@@ -45,8 +49,8 @@ function BookingDetailModal({ booking, open, onClose }) {
     >
       <div style={{ position: "relative" }}>
         <img
-          src={booking.cover}
-          alt={booking.name}
+          src={event.bannerImage}
+          alt={event.title}
           style={{
             width: "100%",
             height: 190,
@@ -66,10 +70,10 @@ function BookingDetailModal({ booking, open, onClose }) {
             padding: "2px 12px",
           }}
         >
-          {booking.category}
+          {event.category}
         </Tag>
         <Tag
-          color={STATUS_COLOR[booking.status] || "default"}
+          color={STATUS_COLOR[event.status] || "default"}
           style={{
             position: "absolute",
             top: 12,
@@ -79,13 +83,13 @@ function BookingDetailModal({ booking, open, onClose }) {
             padding: "2px 12px",
           }}
         >
-          {booking.status}
+          {event.status}
         </Tag>
       </div>
 
       <div style={{ padding: "20px 24px 16px" }}>
         <h2 style={{ margin: "0 0 16px", fontSize: 20, fontWeight: 800 }}>
-          {booking.name}
+          {event.title}
         </h2>
         <Descriptions
           column={1}
@@ -93,7 +97,6 @@ function BookingDetailModal({ booking, open, onClose }) {
           bordered
           labelStyle={{ fontWeight: 600, width: 130 }}
         >
-          <Descriptions.Item label="Booking ID">{booking.id}</Descriptions.Item>
           <Descriptions.Item
             label={
               <span>
@@ -101,7 +104,7 @@ function BookingDetailModal({ booking, open, onClose }) {
               </span>
             }
           >
-            {booking.location}
+            {event.location}
           </Descriptions.Item>
           <Descriptions.Item
             label={
@@ -110,16 +113,16 @@ function BookingDetailModal({ booking, open, onClose }) {
               </span>
             }
           >
-            {booking.contact || "-"}
+            {attendee.phone}
           </Descriptions.Item>
           <Descriptions.Item
             label={
               <span>
-                <CalendarOutlined /> Date
+                <CalendarOutlined /> Date & Time
               </span>
             }
           >
-            {booking.date} {booking.time ? `· ${booking.time}` : ""}
+            {new Date(event.date).toLocaleDateString()} at {event.time}
           </Descriptions.Item>
           <Descriptions.Item
             label={
@@ -129,8 +132,11 @@ function BookingDetailModal({ booking, open, onClose }) {
             }
           >
             <span style={{ fontWeight: 800, color: "#1677ff", fontSize: 16 }}>
-              ${booking.amount}
+              ${booking.totalPrice}
             </span>
+          </Descriptions.Item>
+          <Descriptions.Item label="Organizer">
+            {organizer.firstName} {organizer.lastName}
           </Descriptions.Item>
           <Descriptions.Item label="Payment">
             <Tag
