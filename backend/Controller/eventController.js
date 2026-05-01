@@ -11,7 +11,8 @@ async function createEventNotification(notificationData) {
 
 const getEvents = async (req, res) => {
   try {
-    const events = await eventService.getAllEvents();
+    const { excludeOrganizerId } = req.query;
+    const events = await eventService.getAllEvents(excludeOrganizerId || null);
     res.status(200).json(events);
   } catch (error) {
     res.status(500).json({ message: error.message });

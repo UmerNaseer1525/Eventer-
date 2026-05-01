@@ -18,13 +18,34 @@ import { addPayment } from "../../Services/paymentSlice";
 import { getAllEvents, updateEvent } from "../../Services/eventSlice";
 import Event_Detail from "../../Components/Event_Detail";
 import EventBookingPaymentModal from "../../Components/EventBookingPaymentModal";
+import { getStoredUser } from "../../utils/auth";
 import { useEffect } from "react";
+
+function resolveUserId(user) {
+  return String(user?._id || user?.id || "");
+}
+
+function resolveEventOrganizerId(event) {
+  const organizer = event?.organizer;
+
+  if (!organizer) {
+    return "";
+  }
+
+  if (typeof organizer === "object") {
+    return String(organizer._id || organizer.id || "");
+  }
+
+  return String(organizer);
+}
 
 function Events() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const events = useSelector((state) => state.event.eventsData);
   const dispatch = useDispatch();
+  const currentUser = getStoredUser();
+  const currentUserId = resolveUserId(currentUser);
 
   const [error, setError] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -34,8 +55,12 @@ function Events() {
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
 
 useEffect(() => {
-    dispatch(getAllEvents());
-  }, [dispatch]);
+    dispatch(
+      getAllEvents(
+        currentUserId ? { excludeOrganizerId: currentUserId } : undefined,
+      ),
+    );
+  }, [currentUserId, dispatch]);
 
   function onSearchFilter(e) {
     setSearch(e.target.value);
@@ -49,6 +74,14 @@ useEffect(() => {
     if (!event || !event.id) {
       setError({
         message: "Invalid event data. Cannot start booking.",
+        detail: event,
+      });
+      return;
+    }
+
+    if (currentUserId && resolveEventOrganizerId(event) === currentUserId) {
+      setError({
+        message: "You cannot book tickets for your own event.",
         detail: event,
       });
       return;
@@ -169,6 +202,10 @@ useEffect(() => {
             typeof event.location === "string" &&
             typeof event.category === "string" &&
             event.bannerImage,
+        )
+        .filter(
+          (event) =>
+            !currentUserId || resolveEventOrganizerId(event) !== currentUserId,
         )
     : [];
 

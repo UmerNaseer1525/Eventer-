@@ -1,4 +1,4 @@
-const LOGIN_URL = "http://localhost:3000/api/users/login";
+ const LOGIN_URL = "http://localhost:3000/api/users/login";
 const USERS_URL = "http://localhost:3000/api/users";
 
 async function validateUser(data) {
