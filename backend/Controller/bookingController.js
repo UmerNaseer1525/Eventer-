@@ -103,12 +103,12 @@ const updateBooking = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await bookingService.updateBooking(id, req.body);
-    if (result.matchedCount === 0) {
+    if (!result) {
       return res.status(404).json({ message: "Booking not found" });
     }
-    res.status(200).json({ message: "Booking updated successfully" });
+    res.status(200).json({ message: "Booking updated successfully", booking: result });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
@@ -126,10 +126,10 @@ const updatePaymentStatus = async (req, res) => {
       });
     }
     const result = await bookingService.updatePaymentStatus(id, paymentStatus);
-    if (result.matchedCount === 0) {
+    if (!result) {
       return res.status(404).json({ message: "Booking not found" });
     }
-    res.status(200).json({ message: "Payment status updated successfully" });
+    res.status(200).json({ message: "Payment status updated successfully", booking: result });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -151,7 +151,7 @@ const updateQuantity = async (req, res) => {
     }
     res.status(200).json({ message: "Quantity updated successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
