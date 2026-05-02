@@ -6,8 +6,12 @@ const organizerPopulate = {
   options: { excludeId: true },
 };
 
-const getAllEvents = async () => {
-  return await Event.find({}).populate(organizerPopulate);
+const getAllEvents = async (excludeOrganizerId = null) => {
+  const filter = excludeOrganizerId
+    ? { organizer: { $ne: excludeOrganizerId } }
+    : {};
+
+  return await Event.find(filter).populate(organizerPopulate);
 };
 
 const getEventById = async (eventId) => {

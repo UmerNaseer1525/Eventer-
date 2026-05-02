@@ -157,9 +157,14 @@ function getAuthHeaders() {
   };
 }
 
-export const getAllEvents = () => async (dispatch) => {
+export const getAllEvents = (options = {}) => async (dispatch) => {
   try {
-    const response = await fetch("http://localhost:3000/api/events", {
+    const excludeOrganizerId = options?.excludeOrganizerId;
+    const query = excludeOrganizerId
+      ? `?excludeOrganizerId=${encodeURIComponent(excludeOrganizerId)}`
+      : "";
+
+    const response = await fetch(`http://localhost:3000/api/events${query}`, {
       method: "GET",
       headers: getAuthHeaders(),
     });

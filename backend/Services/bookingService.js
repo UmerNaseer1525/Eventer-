@@ -1,4 +1,5 @@
 const Booking = require("../Model/Booking");
+const Event = require("../Model/Event");
 
 const getAllBookings = async () => {
   return await Booking.find({})
@@ -80,6 +81,27 @@ const getBookingsByTicketType = async (ticketType) => {
 };
 
 const createBooking = async (bookingData) => {
+  const eventId = bookingData?.event;
+  const attendeeId = bookingData?.attendee;
+
+  if (!eventId || !attendeeId) {
+    throw new Error("Event and attendee are required to create a booking");
+  }
+
+  const event = await Event.findById(eventId).select("organizer");
+
+  if (!event) {
+    const error = new Error("Event not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (String(event.organizer) === String(attendeeId)) {
+    const error = new Error("You cannot book tickets for your own event");
+    error.statusCode = 403;
+    throw error;
+  }
+
   const booking = new Booking(bookingData);
   await booking.save();
   return await Booking.findById(booking._id)

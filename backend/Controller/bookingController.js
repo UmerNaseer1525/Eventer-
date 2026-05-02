@@ -82,7 +82,7 @@ const createBooking = async (req, res) => {
       bookingId: booking._id,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
