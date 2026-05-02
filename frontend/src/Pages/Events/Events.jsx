@@ -15,7 +15,7 @@ import {  useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { addBookingAsync } from "../../Services/bookingSlice";
 import { addPayment } from "../../Services/paymentSlice";
-import { getAllEvents, updateEvent } from "../../Services/eventSlice";
+import { getAllEvents, updateEventCapacity } from "../../Services/eventSlice";
 import Event_Detail from "../../Components/Event_Detail";
 import EventBookingPaymentModal from "../../Components/EventBookingPaymentModal";
 import { getStoredUser } from "../../utils/auth";
@@ -115,16 +115,23 @@ useEffect(() => {
 
     const seatCount = Number(values.seatCount || 1);
     const totalAmount = seatCount * Number(bookingEvent.ticketPrice ?? 0);
-    const remainingSeats = Math.max(0, seatsLeft - seatCount);
     const today = new Date().toISOString().split("T")[0];
     const stamp = Date.now();
 
+    // Calculate new capacity after booking
+    const currentCapacity = Math.max(
+      0,
+      Number(bookingEvent.capacity ?? 0)
+    );
+    const newCapacity = currentCapacity - seatCount;
+    const eventId = bookingEvent.id || bookingEvent._id;
+
     setIsBookingSubmitting(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       dispatch(
         addBookingAsync({
           id: `BK-${stamp}`,
-          eventId: bookingEvent.id,
+          eventId,
           title: bookingEvent.title,
           name: bookingEvent.title,
           category: bookingEvent.category,
@@ -145,6 +152,7 @@ useEffect(() => {
           cover: bookingEvent.bannerImage || bookingEvent.cover,
           bannerImage: bookingEvent.bannerImage || bookingEvent.cover,
           quantity: seatCount,
+          seatsReserved: seatCount,
           number_of_guests: seatCount,
           reservedSeats: seatCount,
           user: values.fullName,
@@ -154,10 +162,12 @@ useEffect(() => {
         }),
       );
 
+      await dispatch(updateEventCapacity(eventId, newCapacity));
+
       dispatch(
         addPayment({
           id: `PAY-${stamp}`,
-          eventId: bookingEvent.id,
+          eventId,
           eventName: bookingEvent.title,
           user: values.fullName,
           email: values.email,
@@ -168,13 +178,7 @@ useEffect(() => {
         }),
       );
 
-      dispatch(
-        updateEvent({
-          ...bookingEvent,
-          remainingSeats,
-          number_of_guests: remainingSeats,
-        }),
-      );
+      await dispatch(getAllEvents());
 
       notification.success({
         message: "Seat Reserved",

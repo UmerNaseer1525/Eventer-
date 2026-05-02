@@ -1,18 +1,13 @@
-import { Card, Tag, Button } from "antd";
-
-const STATUS_COLOR = {
-  Upcoming: "blue",
-  Ongoing: "green",
-  Completed: "default",
-  Cancelled: "red",
-};
+import { Card, Tag, Button, Typography } from "antd";
 
 function BookingCard({ booking, onDetail, onCancelSeat }) {
   const event = booking.event;
   const organizer = event.organizer;
-  
-  const paymentStatus = booking.paymentStatus === "paid" ? "Paid" : booking.paymentStatus === "pending" ? "Pending" : "Failed";
-  const canCancelSeat = booking.paymentStatus !== "failed" && event.status !== "Completed";
+  const paymentState = String(booking?.paymentStatus || "").toLowerCase();
+  const eventStatus = String(event?.status || "").toLowerCase();
+  const paymentStatus = paymentState === "paid" ? "Paid" : paymentState === "pending" ? "Pending" : "Failed";
+  const isEventCancelled = eventStatus === "cancelled";
+  const canCancelSeat = paymentState !== "failed" && eventStatus !== "completed" && !isEventCancelled;
 
   return (
     <Card
@@ -62,25 +57,19 @@ function BookingCard({ booking, onDetail, onCancelSeat }) {
         >
           Detail
         </Button>,
-        canCancelSeat ? (
-          <Button
-            key="cancel-seat"
-            danger
-            style={{ borderRadius: 6, width: "90%" }}
-            onClick={() => onCancelSeat(booking)}
-          >
-            Cancel Seat
-          </Button>
-        ) : (
-          <Button
-            key="cancel-seat-disabled"
-            disabled
-            danger
-            style={{ borderRadius: 6, width: "90%" }}
-          >
-            Cancel Seat
-          </Button>
-        ),
+        <Button
+          key="cancel-seat"
+          danger
+          disabled={!canCancelSeat}
+          style={{ borderRadius: 6, width: "90%" }}
+          onClick={() => {
+            if (canCancelSeat) {
+              onCancelSeat(booking);
+            }
+          }}
+        >
+          {isEventCancelled ? "Event Cancelled" : "Cancel Seat"}
+        </Button>,
       ]}
     >
       <div
@@ -111,6 +100,11 @@ function BookingCard({ booking, onDetail, onCancelSeat }) {
       <div style={{ marginBottom: 12, color: "#555" }}>
         <b>Amount:</b> ${booking.totalPrice}
       </div>
+      {isEventCancelled && (
+        <Typography.Text type="warning" style={{ display: "block" }}>
+          Event cancelled. Please contact management for refund, or wait for a new date announcement.
+        </Typography.Text>
+      )}
     </Card>
   );
 }

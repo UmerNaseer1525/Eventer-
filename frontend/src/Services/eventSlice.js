@@ -21,18 +21,7 @@ const eventSlice = createSlice({
       );
     },
     addSingleEvent: (state, action) => {
-      const e = action.payload;
-      const v = String(e?.isApproved || "").toLowerCase();
-      if (v === 'approved') {
-        state.eventsData = state.eventsData || [];
-        state.eventsData.push(e);
-      } else if (v === 'pending') {
-        state.pendingAprovalEvents = state.pendingAprovalEvents || [];
-        state.pendingAprovalEvents.push(e);
-      } else if (v === 'rejected') {
-        state.rejectedEvents = state.rejectedEvents || [];
-        state.rejectedEvents.push(e);
-      }
+      state.pendingAprovalEvents.push(action.payload);
     },
 
     deleteEvent: (state, action) => {
@@ -146,6 +135,21 @@ const eventSlice = createSlice({
         state.eventsData.push({ ...event, isApproved: 'approved' });
       }
     },
+
+    updateCapacity: (state, action) => {
+      const payloadId = String(action.payload._id);
+      const applyCapacity = (event) => {
+        if (String(event._id) !== payloadId) return event;
+        return {
+          ...event,
+          capacity: action.payload.capacity,
+        };
+      };
+
+      state.eventsData = (state.eventsData || []).map(applyCapacity);
+      state.pendingAprovalEvents = (state.pendingAprovalEvents || []).map(applyCapacity);
+      state.rejectedEvents = (state.rejectedEvents || []).map(applyCapacity);
+    }
   },
 });
 
@@ -262,6 +266,23 @@ export const updateEventAsync = (eventData) => async (dispatch) => {
   }
 };
 
+export const updateEventCapacity = (eventId, newCapacity) => async (dispatch) => {
+  try {
+    const response = await fetch(`http://localhost:3000/api/events/${eventId}/capacity`, {
+      method:"PUT", 
+      headers: getAuthHeaders(), 
+      body: JSON.stringify({capacity: newCapacity})
+    })
+    const data = await response.json()
+    if(!response.ok) {
+      throw new Error(data.message)
+    }
+    dispatch(updateCapacity({_id: eventId, capacity: newCapacity}))
+  } catch(error) {
+    console.log(error.message)
+  }
+}
+
 export const deleteEventAsync = (eventId) => async (dispatch) => {
   try {
     const id = eventId?.id || eventId;
@@ -357,5 +378,6 @@ export const {
   eventApproved,
   eventRejected,
   updateApprovedStatus,
+  updateCapacity,
 } = eventSlice.actions;
 export default eventSlice.reducer;

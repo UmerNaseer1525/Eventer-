@@ -83,8 +83,6 @@ function MyEvents() {
 
   const ownedEvents = [
     ...(Array.isArray(eventsData) ? eventsData : []),
-    ...(Array.isArray(pendingEvents) ? pendingEvents : []),
-    ...(Array.isArray(rejectedEvents) ? rejectedEvents : []),
   ].filter(
     (event) =>
       !currentUserId || resolveEventOrganizerId(event) === currentUserId,
