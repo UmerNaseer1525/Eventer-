@@ -46,6 +46,11 @@ function Sidebar() {
       icon: <ScheduleOutlined />,
       label: "Event Requests",
     },
+    {
+      key: "/admin-events",
+      icon: <ScheduleOutlined />,
+      label: "All Events",
+    },
     { key: "/admin-profile", icon: <UserOutlined />, label: "Profile" },
     { key: "/settings", icon: <SettingOutlined />, label: "Settings" },
     {

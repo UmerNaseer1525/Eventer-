@@ -30,7 +30,7 @@ import {
 } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getCurrentRole, getStoredUser } from "../../utils/auth";
+import { getCurrentRole, getStoredUser } from "../../Services/helpers";
 import {
   clearAllNotificationsThunk,
   deleteNotificationThunk,

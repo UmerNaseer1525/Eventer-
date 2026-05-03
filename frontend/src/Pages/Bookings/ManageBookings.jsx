@@ -1,5 +1,6 @@
 import { Row, Col, Empty, notification } from "antd";
 import { useSelector, useDispatch } from "react-redux";
+// Using direct _id fields per request: no helper for id resolution
 import { useEffect, useMemo, useState } from "react";
 import { getAllBookings, deleteBookingAsync } from "../../Services/bookingSlice";
 import { getAllEvents, updateEventCapacity } from "../../Services/eventSlice";
@@ -31,13 +32,8 @@ function ManageBookings() {
   }, [dispatch]);
 
   async function handleCancelSeat(booking) {
-    const eventRef = booking?.event;
-    const eventId =
-      eventRef?._id ||
-      eventRef?.id ||
-      (typeof eventRef === "string" ? eventRef : "") ||
-      booking?.eventId ||
-      booking?.event;
+    const eventRef = booking && booking.event;
+    const eventId = (eventRef && (eventRef._id || eventRef.id)) || booking.eventId || booking.event;
     const targetEventFromStore = Array.isArray(events)
       ? events.find((item) => String(item._id || item.id) === String(eventId))
       : null;
@@ -64,7 +60,7 @@ function ManageBookings() {
     const newCapacity = currentCapacity + releasedSeats;
 
     try {
-      await dispatch(deleteBookingAsync(booking._id));
+      await dispatch(deleteBookingAsync(booking._id || booking.id));
       await dispatch(updateEventCapacity(eventId, newCapacity));
       await dispatch(getAllEvents());
 

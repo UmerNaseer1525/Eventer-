@@ -11,33 +11,18 @@ import {
   notification,
   Divider,
 } from "antd";
-import {  useState } from "react";
+import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { addBookingAsync } from "../../Services/bookingSlice";
 import { addPayment } from "../../Services/paymentSlice";
 import { getAllEvents, updateEventCapacity } from "../../Services/eventSlice";
 import Event_Detail from "../../Components/Event_Detail";
 import EventBookingPaymentModal from "../../Components/EventBookingPaymentModal";
-import { getStoredUser } from "../../utils/auth";
+import { getStoredUser, createBookingPayload } from "../../Services/helpers";
 import { useEffect } from "react";
+// normalize helpers are now in Services/helpers
 
-function resolveUserId(user) {
-  return String(user?._id || user?.id || "");
-}
 
-function resolveEventOrganizerId(event) {
-  const organizer = event?.organizer;
-
-  if (!organizer) {
-    return "";
-  }
-
-  if (typeof organizer === "object") {
-    return String(organizer._id || organizer.id || "");
-  }
-
-  return String(organizer);
-}
 
 function Events() {
   const [search, setSearch] = useState("");
@@ -45,7 +30,7 @@ function Events() {
   const events = useSelector((state) => state.event.eventsData);
   const dispatch = useDispatch();
   const currentUser = getStoredUser();
-  const currentUserId = resolveUserId(currentUser);
+  const currentUserId = currentUser?._id || currentUser?.id || "";
 
   const [error, setError] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -79,7 +64,7 @@ useEffect(() => {
       return;
     }
 
-    if (currentUserId && resolveEventOrganizerId(event) === currentUserId) {
+    if (currentUserId && (event?.organizer?._id || event?.organizer?.id) === currentUserId) {
       setError({
         message: "You cannot book tickets for your own event.",
         detail: event,
@@ -119,48 +104,21 @@ useEffect(() => {
     const stamp = Date.now();
 
     // Calculate new capacity after booking
-    const currentCapacity = Math.max(
-      0,
-      Number(bookingEvent.capacity ?? 0)
-    );
+    const currentCapacity = Math.max(0, Number(bookingEvent.capacity ?? 0));
     const newCapacity = currentCapacity - seatCount;
     const eventId = bookingEvent.id || bookingEvent._id;
 
     setIsBookingSubmitting(true);
     setTimeout(async () => {
-      dispatch(
-        addBookingAsync({
-          id: `BK-${stamp}`,
-          eventId,
-          title: bookingEvent.title,
-          name: bookingEvent.title,
-          category: bookingEvent.category,
-          location: bookingEvent.location,
-          organizer:
-            typeof bookingEvent.organizer === "object"
-              ? [bookingEvent.organizer.firstName, bookingEvent.organizer.lastName]
-                  .filter(Boolean)
-                  .join(" ") || bookingEvent.organizer.email || "EventX"
-              : bookingEvent.organizer || "EventX",
-          contact: bookingEvent.contact || "-",
-          status: bookingEvent.status === "Ongoing" ? "Ongoing" : "Upcoming",
-          paymentStatus: "paid",
-          amount: totalAmount,
-          price: totalAmount,
-          date: bookingEvent.date || today,
-          time: bookingEvent.time || "-",
-          cover: bookingEvent.bannerImage || bookingEvent.cover,
-          bannerImage: bookingEvent.bannerImage || bookingEvent.cover,
-          quantity: seatCount,
-          seatsReserved: seatCount,
-          number_of_guests: seatCount,
-          reservedSeats: seatCount,
-          user: values.fullName,
-          email: values.email,
-          method: values.paymentMethod,
-          ticketType: "Regular",
-        }),
-      );
+      // Use a minimal payload matching backend Booking model.
+      const bookingPayload = createBookingPayload({
+        event: bookingEvent,
+        seatCount,
+        values,
+        totalPrice: totalAmount,
+      });
+
+      dispatch(addBookingAsync(bookingPayload));
 
       await dispatch(updateEventCapacity(eventId, newCapacity));
 
@@ -207,10 +165,11 @@ useEffect(() => {
             typeof event.category === "string" &&
             event.bannerImage,
         )
-        .filter(
-          (event) =>
-            !currentUserId || resolveEventOrganizerId(event) !== currentUserId,
-        )
+        .filter((event) => {
+          if (!currentUserId) return true;
+          const orgId = event?.organizer && (event.organizer._id || event.organizer.id);
+          return String(orgId || "") !== String(currentUserId);
+        })
     : [];
 
   const filteredEvents = validEvents

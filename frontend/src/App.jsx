@@ -8,6 +8,7 @@ import Analytics from "./Pages/Analytics/Analytics";
 import AdminDashboard from "./Pages/Dashboard/AdminDashboard";
 import AdminProfile from "./Pages/Users/AdminProfile";
 import ManageEvents from "./Pages/Events/ManageEvents";
+import AdminEvents from "./Pages/Events/AdminEvents";
 
 import ManageBookings from "./Pages/Bookings/ManageBookings";
 
@@ -170,6 +171,14 @@ const router = createBrowserRouter([
         element: (
           <MainLayout>
             <ManageEvents />
+          </MainLayout>
+        ),
+      },
+      {
+        path: "/admin-events",
+        element: (
+          <MainLayout>
+            <AdminEvents />
           </MainLayout>
         ),
       },

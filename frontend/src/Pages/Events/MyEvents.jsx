@@ -26,26 +26,10 @@ import EditEvent from "../../Components/EditEvent";
 import { deleteEventAsync, getAllEvents, updateEventStatusAsync } from "../../Services/eventSlice";
 import Event_Detail from "../../Components/Event_Detail";
 import EventApprovalQueue from "../../Components/EventApprovalQueue";
-import { getStoredUser } from "../../utils/auth";
+import { getStoredUser } from "../../Services/helpers";
 import { useEffect } from "react";
 
-function resolveUserId(user) {
-  return String(user?._id || user?.id || "");
-}
-
-function resolveEventOrganizerId(event) {
-  const organizer = event?.organizer;
-
-  if (!organizer) {
-    return "";
-  }
-
-  if (typeof organizer === "object") {
-    return String(organizer._id || organizer.id || "");
-  }
-
-  return String(organizer);
-}
+// using direct _id checks for organizer resolution
 
 function MyEvents() {
   const [search, setSearch] = useState("");
@@ -55,7 +39,7 @@ function MyEvents() {
   const rejectedEvents = useSelector((state) => state.event.rejectedEvents);
   const dispatch = useDispatch();
   const currentUser = getStoredUser();
-  const currentUserId = resolveUserId(currentUser);
+  const currentUserId = currentUser?._id || currentUser?.id || "";
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectEditEvent, setSelectEditEvent] = useState(null);
@@ -81,11 +65,8 @@ function MyEvents() {
     dispatch(updateEventStatusAsync({ id: eventId, status: value }));
   }
 
-  const ownedEvents = [
-    ...(Array.isArray(eventsData) ? eventsData : []),
-  ].filter(
-    (event) =>
-      !currentUserId || resolveEventOrganizerId(event) === currentUserId,
+  const ownedEvents = [...(Array.isArray(eventsData) ? eventsData : [])].filter(
+    (event) => !currentUserId || ((event.organizer && (event.organizer._id || event.organizer.id)) === currentUserId),
   );
 
   const filteredEvents = ownedEvents
