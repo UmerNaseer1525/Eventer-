@@ -1,7 +1,42 @@
+const DEFAULT_LOCAL_API_URL = "http://localhost:3000";
+
+function normalizeBaseUrl(value) {
+  if (!value) {
+    return "";
+  }
+
+  return String(value).trim().replace(/\/+$/, "");
+}
+
+export function getApiBaseUrl() {
+  const configuredBaseUrl = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
+
+  if (configuredBaseUrl) {
+    return configuredBaseUrl;
+  }
+
+  return import.meta.env.DEV ? DEFAULT_LOCAL_API_URL : "";
+}
+
+export function apiUrl(path = "") {
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
+  const normalizedPath = path ? (path.startsWith("/") ? path : `/${path}`) : "";
+  const baseUrl = getApiBaseUrl();
+
+  if (!baseUrl) {
+    return normalizedPath || "/";
+  }
+
+  return `${baseUrl}${normalizedPath}`;
+}
+
 export function getStoredUser() {
   try {
     return JSON.parse(localStorage.getItem("user") || "null");
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -34,6 +69,8 @@ export function createBookingPayload({ event, seatCount, values, totalPrice }) {
 }
 
 export default {
+  getApiBaseUrl,
+  apiUrl,
   getStoredUser,
   getCurrentRole,
   getToken,

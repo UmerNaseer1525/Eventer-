@@ -1,5 +1,7 @@
- const LOGIN_URL = "http://localhost:3000/api/users/login";
-const USERS_URL = "http://localhost:3000/api/users";
+import { apiUrl } from "./helpers";
+
+const LOGIN_URL = apiUrl("/api/users/login");
+const USERS_URL = apiUrl("/api/users");
 
 async function validateUser(data) {
   try {

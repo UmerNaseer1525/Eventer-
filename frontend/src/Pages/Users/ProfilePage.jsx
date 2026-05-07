@@ -11,11 +11,11 @@ import {
 import { UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import style from "./profile.module.css";
+import { apiUrl } from "../../Services/helpers";
 
 const { Title, Text } = Typography;
 
-const USER_BASE_URL = "http://localhost:3000/api/users";
-const BACKEND_BASE_URL = "http://localhost:3000";
+const USER_BASE_URL = apiUrl("/api/users");
 
 function getStoredUser() {
   try {
@@ -34,7 +34,7 @@ function resolveImageUrl(imagePath) {
     return imagePath;
   }
 
-  return `${BACKEND_BASE_URL}${imagePath}`;
+  return apiUrl(imagePath);
 }
 
 function ProfilePage({ title }) {

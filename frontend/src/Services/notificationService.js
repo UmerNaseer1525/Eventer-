@@ -1,4 +1,6 @@
-const NOTIFICATIONS_URL = "http://localhost:3000/api/notifications";
+import { apiUrl } from "./helpers";
+
+const NOTIFICATIONS_URL = apiUrl("/api/notifications");
 
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
@@ -58,7 +60,7 @@ async function fetchNotifications(params = {}) {
     throw new Error("Authentication token not found. Please log in again.");
   }
 
-  const url = new URL(NOTIFICATIONS_URL);
+  const url = new URL(NOTIFICATIONS_URL, window.location.origin);
   if (params.target) {
     url.pathname = `${url.pathname}/target/${encodeURIComponent(params.target)}`;
   } else if (params.recipientId) {

@@ -16,9 +16,9 @@ import { useDispatch, useSelector } from "react-redux";
 import styles from "./setting.module.css";
 import { updateUserRecord } from "../../Services/userSlice";
 import { addUnblockRequest } from "../../Services/requestSlice";
+import { apiUrl } from "../../Services/helpers";
 
-const USER_BASE_URL = "http://localhost:3000/api/users";
-const BACKEND_BASE_URL = "http://localhost:3000";
+const USER_BASE_URL = apiUrl("/api/users");
 
 function resolveImageUrl(imagePath) {
   if (!imagePath) {
@@ -27,7 +27,7 @@ function resolveImageUrl(imagePath) {
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
     return imagePath;
   }
-  return `${BACKEND_BASE_URL}${imagePath}`;
+  return apiUrl(imagePath);
 }
 
 function Settings() {

@@ -15,12 +15,23 @@ const reportRoutes = require("./Routes/reportRoutes");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const dbReadyPromise = connectDB();
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 // Serve uploaded images statically
 const path = require("path");
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+app.use(async (_req, _res, next) => {
+  try {
+    await dbReadyPromise;
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Routes
 app.use("/api/users", userRoute);
@@ -57,17 +68,21 @@ app.use((err, req, res, next) => {
     .json({ message: "Internal Server Error", error: err.message });
 });
 
-connectDB()
-  .then(() => {
+if (require.main === module) {
+  dbReadyPromise
+    .then(() => {
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
-  })
-  .catch((error) => {
+    })
+    .catch((error) => {
     console.error(
       "Failed to start server due to database connection error:",
       error,
     );
     process.exit(1);
-  });
+    });
+}
+
+module.exports = app;
 

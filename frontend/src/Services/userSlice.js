@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { apiUrl } from "./helpers";
 
-const USER_BASE_URL = "http://localhost:3000/api/users/";
+const USER_BASE_URL = apiUrl("/api/users");
 
 function getAuthHeaders() {
   const token = localStorage.getItem("token");

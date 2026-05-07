@@ -1,4 +1,6 @@
-const REPORTS_API_URL = "http://localhost:3000/api/reports";
+import { apiUrl } from "./helpers";
+
+const REPORTS_API_URL = apiUrl("/api/reports");
 
 // Get auth token from localStorage
 const getAuthToken = () => {

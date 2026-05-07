@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { apiUrl } from "./helpers";
 
 const eventSlice = createSlice({
   name: "event",
@@ -168,7 +169,7 @@ export const getAllEvents = (options = {}) => async (dispatch) => {
       ? `?excludeOrganizerId=${encodeURIComponent(excludeOrganizerId)}`
       : "";
 
-    const response = await fetch(`http://localhost:3000/api/events${query}`, {
+    const response = await fetch(`${apiUrl("/api/events")}${query}`, {
       method: "GET",
       headers: getAuthHeaders(),
     });
@@ -187,7 +188,7 @@ export const getAllEvents = (options = {}) => async (dispatch) => {
 
 export const addEvent = (eventData) => async (dispatch) => {
   try {
-    const response = await fetch("http://localhost:3000/api/events", {
+    const response = await fetch(apiUrl("/api/events"), {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(eventData),
@@ -206,48 +207,41 @@ export const addEvent = (eventData) => async (dispatch) => {
 };
 
 export const updateEventStatusAsync = (eventDetail) => async (dispatch) => {
-  try {
-    const serverStatus =
-      eventDetail.status === "upcoming"
-        ? "Upcoming"
-        : eventDetail.status === "ongoing"
-          ? "Ongoing"
-          : eventDetail.status === "completed"
-            ? "Completed"
-            : eventDetail.status === "cancelled"
-              ? "Cancelled"
-              : "";
+  const serverStatus =
+    eventDetail.status === "upcoming"
+      ? "Upcoming"
+      : eventDetail.status === "ongoing"
+        ? "Ongoing"
+        : eventDetail.status === "completed"
+          ? "Completed"
+          : eventDetail.status === "cancelled"
+            ? "Cancelled"
+            : "";
 
-    if (!eventDetail?.id || !serverStatus) {
-      throw new Error("Valid event id and status are required");
-    }
-
-    const response = await fetch(
-      `http://localhost:3000/api/events/${eventDetail.id}/status`,
-      {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ status: serverStatus }),
-      },
-    );
-
-    const data = await response.json();
-    if(!response.ok) {
-      throw new Error(data.message)
-    }
-
-    dispatch(updateStatus({ id: eventDetail.id, status: eventDetail.status }))
-    dispatch(getAllEvents())
-    return data;
-  } catch(error) {
-    throw error
+  if (!eventDetail?.id || !serverStatus) {
+    throw new Error("Valid event id and status are required");
   }
-}
+
+  const response = await fetch(apiUrl(`/api/events/${eventDetail.id}/status`), {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ status: serverStatus }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message);
+  }
+
+  dispatch(updateStatus({ id: eventDetail.id, status: eventDetail.status }));
+  dispatch(getAllEvents());
+  return data;
+};
 
 export const updateEventAsync = (eventData) => async (dispatch) => {
   try {
     const id = eventData._id;
-    const response = await fetch(`http://localhost:3000/api/events/${id}`, {
+    const response = await fetch(apiUrl(`/api/events/${id}`), {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify(eventData),
@@ -268,7 +262,7 @@ export const updateEventAsync = (eventData) => async (dispatch) => {
 
 export const updateEventCapacity = (eventId, newCapacity) => async (dispatch) => {
   try {
-    const response = await fetch(`http://localhost:3000/api/events/${eventId}/capacity`, {
+    const response = await fetch(apiUrl(`/api/events/${eventId}/capacity`), {
       method:"PUT", 
       headers: getAuthHeaders(), 
       body: JSON.stringify({capacity: newCapacity})
@@ -286,7 +280,7 @@ export const updateEventCapacity = (eventId, newCapacity) => async (dispatch) =>
 export const deleteEventAsync = (eventId) => async (dispatch) => {
   try {
     const id = eventId?.id || eventId;
-    const response = await fetch(`http://localhost:3000/api/events/${id}`, {
+    const response = await fetch(apiUrl(`/api/events/${id}`), {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -306,7 +300,7 @@ export const deleteEventAsync = (eventId) => async (dispatch) => {
 
 export const approveEventAsync = (eventId) => async (dispatch) => {
   try {
-    const response = await fetch(`http://localhost:3000/api/events/${eventId}/approval`, {
+    const response = await fetch(apiUrl(`/api/events/${eventId}/approval`), {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify({ status: "approved" }),
@@ -328,7 +322,7 @@ export const approveEventAsync = (eventId) => async (dispatch) => {
 
 export const rejectEventAsync = (eventId, reason) => async (dispatch) => {
   try {
-    const response = await fetch(`http://localhost:3000/api/events/${eventId}/approval`, {
+    const response = await fetch(apiUrl(`/api/events/${eventId}/approval`), {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify({ status: "rejected", reason }),
@@ -350,7 +344,7 @@ export const rejectEventAsync = (eventId, reason) => async (dispatch) => {
 
 export const resetApprovalAsync = (eventId) => async (dispatch) => {
   try {
-    const response = await fetch(`http://localhost:3000/api/events/${eventId}/approval`, {
+    const response = await fetch(apiUrl(`/api/events/${eventId}/approval`), {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify({ status: "pending" }),

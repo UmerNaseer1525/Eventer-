@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { apiUrl } from "./helpers";
 
-const REPORTS_API_URL = "http://localhost:3000/api/reports";
+const REPORTS_API_URL = apiUrl("/api/reports");
 
 function getAuthHeaders() {
   const token = localStorage.getItem("token");

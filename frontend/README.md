@@ -1,16 +1,23 @@
-# React + Vite
+# Eventer Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the Vite React frontend for Eventer.
 
-Currently, two official plugins are available:
+## Vercel Deployment
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Deploy the `frontend/` folder as one Vercel project and the `backend/` folder as a second Vercel project.
 
-## React Compiler
+Set this environment variable in the frontend project when the backend is on a different domain:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `VITE_API_BASE_URL=https://your-backend-project.vercel.app`
 
-## Expanding the ESLint configuration
+If the frontend and backend share the same origin, you can leave `VITE_API_BASE_URL` unset and the app will use relative `/api` URLs.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The frontend includes a Vercel SPA rewrite in `vercel.json` so React Router routes continue to work on refresh.
+
+## Local Development
+
+Install dependencies and start the app with `npm run dev` inside `frontend/`.
+
+## Notes
+
+The backend currently stores uploaded files on local disk. That works for local development, but Vercel’s filesystem is ephemeral, so persistent uploads will need external storage if you want them to survive redeploys.

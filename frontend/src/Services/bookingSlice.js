@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { apiUrl } from "./helpers";
 
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
@@ -44,7 +45,7 @@ const bookingSlice = createSlice({
 
 export const getAllBookings = () => async (dispatch) => {
   try {
-    const response = await fetch("http://localhost:3000/api/bookings", {
+    const response = await fetch(apiUrl("/api/bookings"), {
       method: "GET",
       headers: getAuthHeaders(),
     });
@@ -85,7 +86,7 @@ export const addBookingAsync = (bookingData) => async (dispatch) => {
       throw new Error("Event id is required to create a booking");
     }
 
-    const response = await fetch("http://localhost:3000/api/bookings", {
+    const response = await fetch(apiUrl("/api/bookings"), {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({
@@ -118,7 +119,7 @@ export const updateBookingAsync = (bookingData) => async (dispatch) => {
       throw new Error("Booking id is required to update a booking");
     }
 
-    const response = await fetch(`http://localhost:3000/api/bookings/${id}`, {
+    const response = await fetch(apiUrl(`/api/bookings/${id}`), {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify({
@@ -150,7 +151,7 @@ export const updateBookingAsync = (bookingData) => async (dispatch) => {
 export const deleteBookingAsync = (bookingId) => async (dispatch) => {
   try {
     const id = bookingId?.id || bookingId;
-    const response = await fetch(`http://localhost:3000/api/bookings/${id}`, {
+    const response = await fetch(apiUrl(`/api/bookings/${id}`), {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
@@ -173,7 +174,7 @@ export const updatePaymentStatusAsync = (bookingData) => async (dispatch) => {
   try {
     const id = bookingData?.id || bookingData?._id || bookingData;
     const response = await fetch(
-      `http://localhost:3000/api/bookings/${id}/payment-status`,
+      apiUrl(`/api/bookings/${id}/payment-status`),
       {
         method: "PUT",
         headers: getAuthHeaders(),
@@ -198,7 +199,7 @@ export const updateQuantityAsync = (bookingData) => async (dispatch) => {
   try {
     const id = bookingData?.id || bookingData?._id || bookingData;
     const response = await fetch(
-      `http://localhost:3000/api/bookings/${id}/quantity`,
+      apiUrl(`/api/bookings/${id}/quantity`),
       {
         method: "PUT",
         headers: getAuthHeaders(),
@@ -223,7 +224,7 @@ export const updateTotalPriceAsync = (bookingData) => async (dispatch) => {
   try {
     const id = bookingData?.id || bookingData?._id || bookingData;
     const response = await fetch(
-      `http://localhost:3000/api/bookings/${id}/total-price`,
+      apiUrl(`/api/bookings/${id}/total-price`),
       {
         method: "PUT",
         headers: getAuthHeaders(),
@@ -250,7 +251,7 @@ export const updateTicketTypeAsync = (bookingData) => async (dispatch) => {
   try {
     const id = bookingData?.id || bookingData?._id || bookingData;
     const response = await fetch(
-      `http://localhost:3000/api/bookings/${id}/ticket-type`,
+      apiUrl(`/api/bookings/${id}/ticket-type`),
       {
         method: "PUT",
         headers: getAuthHeaders(),

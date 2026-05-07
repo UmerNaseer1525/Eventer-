@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+let connectPromise = null;
  
 async function normalizeLegacyUserRoles() {
   const User = require("../Model/User");
@@ -18,6 +19,15 @@ async function normalizeLegacyUserRoles() {
 }
 
 const connectDB = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  if (connectPromise) {
+    return connectPromise;
+  }
+
+  connectPromise = (async () => {
   try {
     console.log("Attempting to connect to MongoDB...");
     await mongoose.connect(process.env.MONGO_URI, {
@@ -27,14 +37,19 @@ const connectDB = async () => {
     console.log("MongoDB Connected successfully!");
     console.log("Using database:", mongoose.connection.name);
     await normalizeLegacyUserRoles();
+    return mongoose.connection;
   } catch (error) {
     console.error("Database connection failed:", error.message);
     console.error("Error code:", error.code);
     if (error.cause) {
       console.error("Cause:", error.cause);
     }
-    process.exit(1);
+    connectPromise = null;
+    throw error;
   }
+  })();
+
+  return connectPromise;
 };
 
 const closeDB = async () => {

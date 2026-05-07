@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { apiUrl } from "./helpers";
 
-const ANALYTICS_BASE_URL = "http://localhost:3000/api/analytics";
+const ANALYTICS_BASE_URL = apiUrl("/api/analytics");
 
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
